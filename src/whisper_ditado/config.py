@@ -9,7 +9,7 @@ from platformdirs import user_config_dir, user_log_dir
 
 APP_NAME = "WhisperDitado"
 APP_AUTHOR = "WhisperDitado"
-CONFIG_VERSION = 1
+CONFIG_VERSION = 2
 
 
 @dataclass(slots=True)
@@ -19,15 +19,17 @@ class AppConfig:
     microphone: str = "ME6S"
     hotkey: str = "F8"
     autostart: bool = True
-    overlay_position: str = "cursor"
+    overlay_position: str = "screen_center"
     language: str = "pt"
 
     def normalized(self) -> AppConfig:
+        if self.version < 2 and self.overlay_position == "cursor":
+            self.overlay_position = "screen_center"
         if self.model not in {"small", "medium"}:
             self.model = "small"
         self.hotkey = self.hotkey.upper() if self.hotkey else "F8"
-        if self.overlay_position not in {"cursor", "bottom_center"}:
-            self.overlay_position = "cursor"
+        if self.overlay_position not in {"cursor", "screen_center", "bottom_center"}:
+            self.overlay_position = "screen_center"
         self.version = CONFIG_VERSION
         return self
 
@@ -68,4 +70,3 @@ def log_directory() -> Path:
     path = Path(user_log_dir(APP_NAME, APP_AUTHOR))
     path.mkdir(parents=True, exist_ok=True)
     return path
-

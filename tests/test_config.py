@@ -10,7 +10,7 @@ def test_defaults_are_product_defaults(tmp_path):
     assert config.model == "small"
     assert config.hotkey == "F8"
     assert config.autostart is True
-    assert config.overlay_position == "cursor"
+    assert config.overlay_position == "screen_center"
 
 
 def test_last_model_is_persisted(tmp_path):
@@ -28,4 +28,3 @@ def test_invalid_values_fall_back_safely(tmp_path):
     config = ConfigStore(path).load()
     assert config.model == "small"
     assert config.hotkey == "F8"
-
