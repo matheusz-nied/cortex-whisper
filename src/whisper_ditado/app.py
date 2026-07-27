@@ -205,6 +205,7 @@ def run_gui() -> int:
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     log_file = configure_logging()
+    logging.getLogger(__name__).info("Backend gráfico Qt: %s", app.platformName())
     instance = SingleInstance()
     if not instance.acquire():
         logging.getLogger(__name__).warning(instance.message)

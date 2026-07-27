@@ -19,6 +19,8 @@ class StatusOverlay(QWidget):
         self.level = 0.0
         self.spinner_angle = 0
         self.started_at = time.monotonic()
+        self.last_cursor_position: QPoint | None = None
+        self.last_position_check = 0.0
         self.setFixedSize(202, 48)
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint
@@ -59,13 +61,21 @@ class StatusOverlay(QWidget):
 
     def _animate(self) -> None:
         self.spinner_angle = (self.spinner_angle + 18) % 360
+        now = time.monotonic()
+        if self.position_mode == "cursor" and now - self.last_position_check >= 0.1:
+            self.last_position_check = now
+            cursor = QCursor.pos()
+            if not cursor.isNull() and cursor != self.last_cursor_position:
+                self._place(cursor)
         self.update()
 
-    def _place(self) -> None:
+    def _place(self, cursor: QPoint | None = None) -> None:
         screens = QGuiApplication.screens()
         if not screens:
             return
-        cursor = QCursor.pos()
+        if cursor is None:
+            cursor = QCursor.pos()
+        self.last_cursor_position = QPoint(cursor)
         screen = QGuiApplication.screenAt(cursor) or QGuiApplication.primaryScreen() or screens[0]
         area = screen.availableGeometry()
         if self.position_mode == "cursor" and not cursor.isNull():
