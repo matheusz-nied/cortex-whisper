@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import logging
+import signal
 import subprocess
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from PySide6.QtCore import QByteArray, QObject, Qt, Signal, Slot
+from PySide6.QtCore import QByteArray, QObject, Qt, QTimer, Signal, Slot
 from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPixmap
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
@@ -58,6 +59,7 @@ class SingleInstance(QObject):
         super().__init__()
         self.server = QLocalServer(self)
         self.server.newConnection.connect(self._receive)
+        self.message = ""
 
     def acquire(self) -> bool:
         if self.server.listen(SERVER_NAME):
@@ -67,6 +69,13 @@ class SingleInstance(QObject):
         if socket.waitForConnected(500):
             socket.write(QByteArray(b"show"))
             socket.waitForBytesWritten(500)
+            if socket.waitForReadyRead(700) and bytes(socket.readAll()) == b"ok":
+                self.message = "O Whisper Ditado já está aberto; exibindo as configurações."
+            else:
+                self.message = (
+                    "Outra instância do Whisper Ditado existe, mas não respondeu. "
+                    "Ela pode estar suspensa; use 'jobs -l' e encerre-a antes de tentar novamente."
+                )
             socket.disconnectFromServer()
             return False
         QLocalServer.removeServer(SERVER_NAME)
@@ -77,6 +86,8 @@ class SingleInstance(QObject):
         if socket:
             socket.waitForReadyRead(250)
             self.show_requested.emit()
+            socket.write(QByteArray(b"ok"))
+            socket.waitForBytesWritten(250)
             socket.disconnectFromServer()
 
 
@@ -111,6 +122,7 @@ class WhisperDitadoApplication(QObject):
         self.controller.state_changed.connect(self._state_changed)
         self.controller.state_changed.connect(self.overlay.set_status)
         self.controller.audio_level.connect(self.overlay.set_level)
+        self.controller.prepare_paste.connect(self.overlay.hide)
         self.controller.notification.connect(self._notify)
         self.pause_action.toggled.connect(self.controller.set_paused)
         settings_action.triggered.connect(self.show_settings)
@@ -195,12 +207,30 @@ def run_gui() -> int:
     log_file = configure_logging()
     instance = SingleInstance()
     if not instance.acquire():
+        logging.getLogger(__name__).warning(instance.message)
+        print(instance.message, file=sys.stderr, flush=True)
         return 0
     whisper_app = WhisperDitadoApplication(app, log_file)
     instance.show_requested.connect(whisper_app.show_settings)
     app.aboutToQuit.connect(whisper_app.controller.shutdown)
+
+    def handle_shutdown_signal(signum, _frame) -> None:
+        logging.getLogger(__name__).info("Sinal %s recebido; encerrando", signum)
+        whisper_app.quit()
+
+    signal.signal(signal.SIGINT, handle_shutdown_signal)
+    if hasattr(signal, "SIGTERM"):
+        signal.signal(signal.SIGTERM, handle_shutdown_signal)
+
+    # O event loop nativo do Qt precisa devolver o controle ao Python
+    # periodicamente para que SIGINT (Ctrl+C) seja processado.
+    signal_pump = QTimer()
+    signal_pump.setInterval(150)
+    signal_pump.timeout.connect(lambda: None)
+    signal_pump.start()
     whisper_app.start()
     # As referências precisam sobreviver enquanto o loop de eventos estiver ativo.
     app._single_instance = instance  # type: ignore[attr-defined]
     app._whisper_app = whisper_app  # type: ignore[attr-defined]
+    app._signal_pump = signal_pump  # type: ignore[attr-defined]
     return app.exec()

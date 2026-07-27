@@ -67,7 +67,9 @@ class SystemIntegration:
                 command,
                 input=text,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE,
+                # wl-copy deixa um filho mantendo a seleção. PIPE esperaria o
+                # descritor desse filho fechar e causaria um falso timeout.
+                stderr=subprocess.DEVNULL,
                 text=True,
                 check=False,
                 timeout=5,
@@ -76,8 +78,7 @@ class SystemIntegration:
             return False, f"{backend}: {exc}"
         if result.returncode == 0:
             return True, backend
-        error = result.stderr.strip() or f"código de saída {result.returncode}"
-        return False, f"{backend}: {error}"
+        return False, f"{backend}: código de saída {result.returncode}"
 
     def paste(self) -> tuple[bool, str]:
         if self.platform == "linux" and os.environ.get("XDG_SESSION_TYPE", "").casefold() == "wayland":

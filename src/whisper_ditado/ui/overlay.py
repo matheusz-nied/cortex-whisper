@@ -25,7 +25,9 @@ class StatusOverlay(QWidget):
             | Qt.WindowType.Tool
             | Qt.WindowType.WindowStaysOnTopHint
             | Qt.WindowType.WindowDoesNotAcceptFocus
+            | Qt.WindowType.WindowTransparentForInput
         )
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
@@ -45,7 +47,6 @@ class StatusOverlay(QWidget):
             return
         self._place()
         self.show()
-        self.raise_()
         if not self.timer.isActive():
             self.timer.start()
         self.update()

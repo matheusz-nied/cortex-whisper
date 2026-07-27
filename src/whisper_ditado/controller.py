@@ -25,6 +25,7 @@ class Controller(QObject):
     hotkey_pressed = Signal()
     hotkey_released = Signal()
     hotkey_error = Signal(str)
+    prepare_paste = Signal()
     _model_result = Signal(object)
     _model_failure = Signal(str)
     _transcription_result = Signal(str)
@@ -42,6 +43,7 @@ class Controller(QObject):
         self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="whisper")
         self.hotkey: HotkeyBackend | None = None
         self.paused = False
+        self._shutting_down = False
 
         self.hotkey_pressed.connect(self._on_hotkey_pressed)
         self.hotkey_released.connect(self._on_hotkey_released)
@@ -161,8 +163,12 @@ class Controller(QObject):
             LOGGER.info("Texto colocado no clipboard por %s", clipboard_backend)
         else:
             LOGGER.warning("Falha no clipboard nativo: %s; mantendo fallback do Qt", clipboard_backend)
-        # Dê ao compositor tempo para publicar a nova seleção antes do Ctrl+V.
-        QTimer.singleShot(220, self._paste_transcription)
+        # Remova a superfície flutuante antes do Ctrl+V. Alguns compositores
+        # Wayland consideram a última superfície elevada como alvo de teclado,
+        # mesmo quando ela declara que não aceita foco.
+        self.prepare_paste.emit()
+        LOGGER.info("Pílula ocultada; aguardando o aplicativo de destino reassumir o foco")
+        QTimer.singleShot(350, self._paste_transcription)
 
     def _paste_transcription(self) -> None:
         try:
@@ -217,6 +223,10 @@ class Controller(QObject):
         self.set_state(AppState.PAUSED if paused else AppState.READY)
 
     def shutdown(self) -> None:
+        if self._shutting_down:
+            return
+        self._shutting_down = True
+        LOGGER.info("Encerrando microfone, atalho global e tarefas do Whisper")
         if self.hotkey:
             self.hotkey.stop()
         self.recorder.close()
