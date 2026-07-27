@@ -1,0 +1,7 @@
+faster-whisper==1.2.1
+numpy==2.5.1
+platformdirs>=4.3,<5
+pynput==1.8.2
+PySide6>=6.8.6,<7
+sounddevice==0.5.5
+

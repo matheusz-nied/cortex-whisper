@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "whisper-ditado"
+version = "2.0.0"
+description = "Ditado local e privado com Whisper para Linux e Windows"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "faster-whisper>=1.2.1,<2",
+  "numpy>=2.2,<3",
+  "platformdirs>=4.3,<5",
+  "pynput>=1.8,<2",
+  "PySide6>=6.8.6,<7",
+  "sounddevice>=0.5.2,<1",
+]
+
+[project.scripts]
+whisper-ditado = "whisper_ditado.__main__:main"
+
+[project.gui-scripts]
+whisper-ditado-gui = "whisper_ditado.__main__:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]

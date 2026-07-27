@@ -1,0 +1,206 @@
+from __future__ import annotations
+
+import logging
+import subprocess
+import sys
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
+
+from PySide6.QtCore import QByteArray, QObject, Qt, Signal, Slot
+from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPixmap
+from PySide6.QtNetwork import QLocalServer, QLocalSocket
+from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
+
+from .config import ConfigStore, log_directory
+from .controller import Controller
+from .state import AppState
+from .ui.overlay import StatusOverlay
+from .ui.settings import SettingsDialog
+
+SERVER_NAME = "io.github.kaizen.WhisperDitado.v2"
+
+
+def configure_logging() -> Path:
+    log_file = log_directory() / "whisper-ditado.log"
+    formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+    handler = RotatingFileHandler(log_file, maxBytes=1_000_000, backupCount=3, encoding="utf-8")
+    handler.setFormatter(formatter)
+    terminal_handler = logging.StreamHandler(sys.stderr)
+    terminal_handler.setFormatter(formatter)
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    root.addHandler(handler)
+    root.addHandler(terminal_handler)
+    root.info("Whisper Ditado iniciado; log em %s", log_file)
+    return log_file
+
+
+def tray_icon(color: str) -> QIcon:
+    pixmap = QPixmap(64, 64)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setPen(Qt.PenStyle.NoPen)
+    painter.setBrush(QColor(color))
+    painter.drawEllipse(8, 8, 48, 48)
+    painter.setBrush(QColor("#ffffff"))
+    painter.drawRoundedRect(27, 18, 10, 20, 5, 5)
+    painter.drawRoundedRect(22, 34, 20, 5, 2, 2)
+    painter.drawRoundedRect(29, 38, 6, 9, 2, 2)
+    painter.end()
+    return QIcon(pixmap)
+
+
+class SingleInstance(QObject):
+    show_requested = Signal()
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.server = QLocalServer(self)
+        self.server.newConnection.connect(self._receive)
+
+    def acquire(self) -> bool:
+        if self.server.listen(SERVER_NAME):
+            return True
+        socket = QLocalSocket()
+        socket.connectToServer(SERVER_NAME)
+        if socket.waitForConnected(500):
+            socket.write(QByteArray(b"show"))
+            socket.waitForBytesWritten(500)
+            socket.disconnectFromServer()
+            return False
+        QLocalServer.removeServer(SERVER_NAME)
+        return self.server.listen(SERVER_NAME)
+
+    def _receive(self) -> None:
+        socket = self.server.nextPendingConnection()
+        if socket:
+            socket.waitForReadyRead(250)
+            self.show_requested.emit()
+            socket.disconnectFromServer()
+
+
+class WhisperDitadoApplication(QObject):
+    def __init__(self, qt_app: QApplication, log_file: Path) -> None:
+        super().__init__()
+        self.qt_app = qt_app
+        self.log_file = log_file
+        self.store = ConfigStore()
+        self.controller = Controller(self.store)
+        self.overlay = StatusOverlay(self.controller.config.overlay_position)
+        self.settings: SettingsDialog | None = None
+        self.tray = QSystemTrayIcon(tray_icon("#5da9ff"), self)
+        self.menu = QMenu()
+
+        self.status_action = QAction("Carregando modelo…", self.menu)
+        self.status_action.setEnabled(False)
+        self.pause_action = QAction("Pausar ditado", self.menu)
+        self.pause_action.setCheckable(True)
+        settings_action = QAction("Configurações…", self.menu)
+        logs_action = QAction("Abrir pasta de logs", self.menu)
+        quit_action = QAction("Sair", self.menu)
+        self.menu.addAction(self.status_action)
+        self.menu.addSeparator()
+        self.menu.addAction(self.pause_action)
+        self.menu.addAction(settings_action)
+        self.menu.addAction(logs_action)
+        self.menu.addSeparator()
+        self.menu.addAction(quit_action)
+        self.tray.setContextMenu(self.menu)
+
+        self.controller.state_changed.connect(self._state_changed)
+        self.controller.state_changed.connect(self.overlay.set_status)
+        self.controller.audio_level.connect(self.overlay.set_level)
+        self.controller.notification.connect(self._notify)
+        self.pause_action.toggled.connect(self.controller.set_paused)
+        settings_action.triggered.connect(self.show_settings)
+        logs_action.triggered.connect(self.open_logs)
+        quit_action.triggered.connect(self.quit)
+        self.tray.activated.connect(self._tray_activated)
+
+    def start(self) -> None:
+        self.tray.show()
+        self.controller.start()
+        if not QSystemTrayIcon.isSystemTrayAvailable():
+            self.show_settings()
+
+    @Slot(str, str)
+    def _state_changed(self, state: str, message: str) -> None:
+        parsed = AppState(state)
+        labels = {
+            AppState.LOADING: message or "Carregando modelo…",
+            AppState.READY: f"Pronto — segure {self.controller.config.hotkey}",
+            AppState.RECORDING: "Gravando…",
+            AppState.TRANSCRIBING: "Transcrevendo…",
+            AppState.SUCCESS: "Transcrição concluída",
+            AppState.ERROR: message or "Erro",
+            AppState.PAUSED: "Ditado pausado",
+        }
+        colors = {
+            AppState.RECORDING: "#ff4d5a",
+            AppState.TRANSCRIBING: "#5da9ff",
+            AppState.SUCCESS: "#42d392",
+            AppState.ERROR: "#ffb44d",
+            AppState.PAUSED: "#8a8f98",
+        }
+        self.status_action.setText(labels[parsed])
+        self.tray.setIcon(tray_icon(colors.get(parsed, "#5da9ff")))
+        self.tray.setToolTip(f"Whisper Ditado — {labels[parsed]}")
+        if self.settings:
+            self.settings.backend_label.setText(self.controller.backend_summary)
+
+    @Slot(str, str)
+    def _notify(self, title: str, message: str) -> None:
+        self.tray.showMessage(title, message, QSystemTrayIcon.MessageIcon.Information, 3500)
+
+    @Slot()
+    def show_settings(self) -> None:
+        if self.settings is None:
+            self.settings = SettingsDialog(self.controller.config, self.controller.backend_summary)
+            self.settings.config_saved.connect(self._save_settings)
+        self.settings.config = self.controller.config
+        self.settings.show()
+        self.settings.raise_()
+        self.settings.activateWindow()
+
+    @Slot(object)
+    def _save_settings(self, config) -> None:
+        self.controller.update_config(config)
+        self.overlay.position_mode = config.overlay_position
+
+    @Slot()
+    def open_logs(self) -> None:
+        folder = str(self.log_file.parent)
+        if sys.platform == "win32":
+            subprocess.Popen(["explorer", folder])
+        else:
+            subprocess.Popen(["xdg-open", folder])
+
+    def _tray_activated(self, reason) -> None:
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+            self.show_settings()
+
+    @Slot()
+    def quit(self) -> None:
+        self.controller.shutdown()
+        self.tray.hide()
+        self.qt_app.quit()
+
+
+def run_gui() -> int:
+    QApplication.setApplicationName("Whisper Ditado")
+    QApplication.setOrganizationName("WhisperDitado")
+    app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
+    log_file = configure_logging()
+    instance = SingleInstance()
+    if not instance.acquire():
+        return 0
+    whisper_app = WhisperDitadoApplication(app, log_file)
+    instance.show_requested.connect(whisper_app.show_settings)
+    app.aboutToQuit.connect(whisper_app.controller.shutdown)
+    whisper_app.start()
+    # As referências precisam sobreviver enquanto o loop de eventos estiver ativo.
+    app._single_instance = instance  # type: ignore[attr-defined]
+    app._whisper_app = whisper_app  # type: ignore[attr-defined]
+    return app.exec()
