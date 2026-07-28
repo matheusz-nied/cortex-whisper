@@ -224,5 +224,6 @@ reporting platform-integration issues.
 
 ## License
 
-A project license has not been selected yet. Add a `LICENSE` file before the
-public release so users know how they may use, modify, and redistribute the code.
+Whisper Ditado is released under the [MIT License](LICENSE).
+
+Copyright (c) 2026 Matheus Fernandes da Silva.
