@@ -10,12 +10,12 @@ keyboard_imports = (
 )
 
 a = Analysis(
-    [str(root / "ditado.py")],
+    [str(root / "packaging" / "launcher.py")],
     pathex=[str(root / "src")],
     binaries=[],
     datas=[
-        (str(root / "atalho_wayland.py"), "."),
-        (str(root / "assets" / "whisper-ditado.svg"), "assets"),
+        (str(root / "pulsar_shortcut_portal.py"), "."),
+        (str(root / "assets" / "pulsar-whisper.svg"), "assets"),
         (str(root / "build" / "legal"), "legal"),
     ],
     hiddenimports=["faster_whisper", "sounddevice", "pynput", *keyboard_imports],
@@ -41,7 +41,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="whisper-ditado",
+    name="pulsar-whisper",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -56,5 +56,5 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=True,
-    name="whisper-ditado",
+    name="pulsar-whisper",
 )

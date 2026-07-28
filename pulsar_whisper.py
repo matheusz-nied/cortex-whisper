@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Legacy compatibility entry point for Pulsar Whisper."""
+"""Run Pulsar Whisper directly from a source checkout."""
 
 import sys
 from pathlib import Path
 
 SOURCE = Path(__file__).resolve().parent / "src"
-if str(SOURCE) not in sys.path:
-    sys.path.insert(0, str(SOURCE))
+if str(SOURCE) in sys.path:
+    sys.path.remove(str(SOURCE))
+sys.path.insert(0, str(SOURCE))
 
 from pulsar_whisper.__main__ import main  # noqa: E402
 

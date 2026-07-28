@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from whisper_ditado.config import AppConfig, ConfigStore
+from pulsar_whisper.config import AppConfig, ConfigStore
 
 
 def test_defaults_are_product_defaults(tmp_path):
@@ -28,3 +28,17 @@ def test_invalid_values_fall_back_safely(tmp_path):
     config = ConfigStore(path).load()
     assert config.model == "small"
     assert config.hotkey == "F8"
+
+
+def test_legacy_configuration_is_copied_without_deleting_the_original(tmp_path):
+    current = tmp_path / "PulsarWhisper" / "config.json"
+    legacy = tmp_path / "WhisperDitado" / "config.json"
+    legacy.parent.mkdir()
+    legacy.write_text(json.dumps({"model": "medium", "microphone": "ME6S"}))
+
+    config = ConfigStore(current, legacy).load()
+
+    assert config.model == "medium"
+    assert config.microphone == "ME6S"
+    assert current.is_file()
+    assert legacy.is_file()

@@ -1,8 +1,8 @@
 # Third-Party Notices
 
-Whisper Ditado is licensed under the MIT License. The project uses and, in its
+Pulsar Whisper is licensed under the MIT License. The project uses and, in its
 binary releases, redistributes third-party components under their own terms.
-Those terms are not replaced by the Whisper Ditado license.
+Those terms are not replaced by the Pulsar Whisper license.
 
 Release packages include this notice, the project's `LICENSE`, a generated
 Python component inventory, a native binary inventory, and collected license
@@ -74,13 +74,13 @@ release inventory records the exact Python and PyInstaller versions used.
 
 ## Qt and PySide6
 
-Whisper Ditado uses the community PySide6 distribution under LGPL-3.0-only. Qt
+Pulsar Whisper uses the community PySide6 distribution under LGPL-3.0-only. Qt
 shared libraries remain separate dynamically loaded files in the onedir bundle.
 Users may inspect, replace, or relink those libraries after extracting a package.
 The source code for the corresponding Qt release is available from Qt's official
 source archives.
 
-Whisper Ditado does not use Qt Virtual Keyboard. Packaging removes its plugin,
+Pulsar Whisper does not use Qt Virtual Keyboard. Packaging removes its plugin,
 QML module, and libraries because that Qt module is GPL-3.0-only or commercially
 licensed, rather than LGPL-3.0.
 
@@ -91,14 +91,14 @@ licensed, rather than LGPL-3.0.
 ## PyAV and FFmpeg
 
 `faster-whisper` declares PyAV as a dependency and imports it unconditionally.
-Whisper Ditado, however, supplies microphone samples directly as NumPy arrays,
+Pulsar Whisper, however, supplies microphone samples directly as NumPy arrays,
 so PyAV's file-decoding path is never used. Frozen release packages therefore
 exclude PyAV, FFmpeg, and their native codec libraries. A runtime compatibility
 module satisfies faster-whisper's import and reports an explicit error if a
 future feature attempts to transcribe an audio file.
 
 Source installations may still install PyAV because it is a declared dependency
-of faster-whisper, but Whisper Ditado does not redistribute that source-install
+of faster-whisper, but Pulsar Whisper does not redistribute that source-install
 wheel. If file-input transcription is added later, the release process must
 restore and audit PyAV, FFmpeg, codec notices, effective licenses, and source-
 distribution obligations before shipping binaries.
@@ -118,7 +118,7 @@ copies that file and the ONNX Runtime license into every release package.
 
 ## Models
 
-Whisper model files are not bundled with Whisper Ditado. They are downloaded on
+Whisper model files are not bundled with Pulsar Whisper. They are downloaded on
 first use from the selected model repository. Model weights and their associated
 files remain subject to the terms published by their provider.
 

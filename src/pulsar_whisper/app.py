@@ -1,3 +1,5 @@
+"""Pulsar Whisper Qt application."""
+
 from __future__ import annotations
 
 import logging
@@ -14,15 +16,16 @@ from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from .config import ConfigStore, log_directory
 from .controller import Controller
+from .metadata import APP_COMPACT_NAME, APP_ID, APP_NAME, APP_SLUG
 from .state import AppState
 from .ui.overlay import StatusOverlay
 from .ui.settings import SettingsDialog
 
-SERVER_NAME = "io.github.kaizen.WhisperDitado.v2"
+SERVER_NAME = f"{APP_ID}.v1"
 
 
 def configure_logging() -> Path:
-    log_file = log_directory() / "whisper-ditado.log"
+    log_file = log_directory() / f"{APP_SLUG}.log"
     formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
     handler = RotatingFileHandler(log_file, maxBytes=1_000_000, backupCount=3, encoding="utf-8")
     handler.setFormatter(formatter)
@@ -32,7 +35,7 @@ def configure_logging() -> Path:
     root.setLevel(logging.INFO)
     root.addHandler(handler)
     root.addHandler(terminal_handler)
-    root.info("Whisper Ditado started; log file: %s", log_file)
+    root.info("%s started; log file: %s", APP_NAME, log_file)
     return log_file
 
 
@@ -70,10 +73,10 @@ class SingleInstance(QObject):
             socket.write(QByteArray(b"show"))
             socket.waitForBytesWritten(500)
             if socket.waitForReadyRead(700) and bytes(socket.readAll()) == b"ok":
-                self.message = "Whisper Ditado is already running; opening Settings."
+                self.message = f"{APP_NAME} is already running; opening Settings."
             else:
                 self.message = (
-                    "Another Whisper Ditado instance exists but did not respond. "
+                    f"Another {APP_NAME} instance exists but did not respond. "
                     "It may be suspended; run 'jobs -l' and stop it before trying again."
                 )
             socket.disconnectFromServer()
@@ -91,7 +94,7 @@ class SingleInstance(QObject):
             socket.disconnectFromServer()
 
 
-class WhisperDitadoApplication(QObject):
+class PulsarWhisperApplication(QObject):
     def __init__(self, qt_app: QApplication, log_file: Path) -> None:
         super().__init__()
         self.qt_app = qt_app
@@ -157,7 +160,7 @@ class WhisperDitadoApplication(QObject):
         }
         self.status_action.setText(labels[parsed])
         self.tray.setIcon(tray_icon(colors.get(parsed, "#5da9ff")))
-        self.tray.setToolTip(f"Whisper Ditado — {labels[parsed]}")
+        self.tray.setToolTip(f"{APP_NAME} — {labels[parsed]}")
         if self.settings:
             self.settings.backend_label.setText(self.controller.backend_summary)
 
@@ -200,8 +203,8 @@ class WhisperDitadoApplication(QObject):
 
 
 def run_gui() -> int:
-    QApplication.setApplicationName("Whisper Ditado")
-    QApplication.setOrganizationName("WhisperDitado")
+    QApplication.setApplicationName(APP_NAME)
+    QApplication.setOrganizationName(APP_COMPACT_NAME)
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     log_file = configure_logging()
@@ -211,13 +214,13 @@ def run_gui() -> int:
         logging.getLogger(__name__).warning(instance.message)
         print(instance.message, file=sys.stderr, flush=True)
         return 0
-    whisper_app = WhisperDitadoApplication(app, log_file)
-    instance.show_requested.connect(whisper_app.show_settings)
-    app.aboutToQuit.connect(whisper_app.controller.shutdown)
+    pulsar_app = PulsarWhisperApplication(app, log_file)
+    instance.show_requested.connect(pulsar_app.show_settings)
+    app.aboutToQuit.connect(pulsar_app.controller.shutdown)
 
     def handle_shutdown_signal(signum, _frame) -> None:
         logging.getLogger(__name__).info("Received signal %s; shutting down", signum)
-        whisper_app.quit()
+        pulsar_app.quit()
 
     signal.signal(signal.SIGINT, handle_shutdown_signal)
     if hasattr(signal, "SIGTERM"):
@@ -229,9 +232,9 @@ def run_gui() -> int:
     signal_pump.setInterval(150)
     signal_pump.timeout.connect(lambda: None)
     signal_pump.start()
-    whisper_app.start()
+    pulsar_app.start()
     # Keep these references alive for the duration of the event loop.
     app._single_instance = instance  # type: ignore[attr-defined]
-    app._whisper_app = whisper_app  # type: ignore[attr-defined]
+    app._pulsar_app = pulsar_app  # type: ignore[attr-defined]
     app._signal_pump = signal_pump  # type: ignore[attr-defined]
     return app.exec()

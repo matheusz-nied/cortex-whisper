@@ -22,8 +22,7 @@ SHORTCUTS_INTERFACE = "org.freedesktop.portal.GlobalShortcuts"
 REGISTRY_INTERFACE = "org.freedesktop.host.portal.Registry"
 REQUEST_INTERFACE = "org.freedesktop.portal.Request"
 SESSION_INTERFACE = "org.freedesktop.portal.Session"
-SHORTCUT_ID = "ditado_f8"
-APP_ID = "io.github.kaizen.WhisperDitado"
+SHORTCUT_ID = "pulsar_whisper_hold_to_talk"
 
 
 def emit(message: str) -> None:
@@ -31,7 +30,7 @@ def emit(message: str) -> None:
 
 
 class GlobalShortcut:
-    def __init__(self, trigger: str = "F8") -> None:
+    def __init__(self, trigger: str, app_id: str) -> None:
         DBusGMainLoop(set_as_default=True)
         self.bus = dbus.SessionBus()
         portal_object = self.bus.get_object(BUS_NAME, OBJECT_PATH)
@@ -41,6 +40,7 @@ class GlobalShortcut:
         self.session_handle: str | None = None
         self.finished = False
         self.trigger = trigger
+        self.app_id = app_id
 
         unique_name = self.bus.get_unique_name().lstrip(":")
         self.sender_name = unique_name.replace(".", "_")
@@ -76,7 +76,7 @@ class GlobalShortcut:
         # Directly executed Python processes do not receive a GNOME App ID. The
         # Registry associates this connection with the locally installed desktop file.
         self.registry.Register(
-            dbus.String(APP_ID),
+            dbus.String(self.app_id),
             dbus.Dictionary({}, signature="sv"),
         )
 
@@ -177,9 +177,10 @@ class GlobalShortcut:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--trigger", default="F8")
+    parser.add_argument("--app-id", required=True)
     args = parser.parse_args()
     try:
-        shortcut = GlobalShortcut(args.trigger)
+        shortcut = GlobalShortcut(args.trigger, args.app_id)
         signal.signal(signal.SIGTERM, lambda *_: shortcut.close())
         signal.signal(signal.SIGINT, lambda *_: shortcut.close())
         shortcut.start()

@@ -1,3 +1,5 @@
+"""Pulsar Whisper command-line entry point."""
+
 from __future__ import annotations
 
 import argparse
@@ -5,10 +7,11 @@ import sys
 
 from . import __version__
 from .config import ConfigStore
+from .metadata import APP_DESCRIPTION, APP_NAME
 
 
 def parser() -> argparse.ArgumentParser:
-    result = argparse.ArgumentParser(description="Whisper Ditado — private, local voice dictation")
+    result = argparse.ArgumentParser(description=f"{APP_NAME} — {APP_DESCRIPTION.lower()}")
     result.add_argument("--version", action="version", version=__version__)
     result.add_argument("--list-microphones", action="store_true")
     result.add_argument("--diagnostics", action="store_true")
@@ -33,7 +36,7 @@ def main() -> int:
         from .transcriber import Transcriber
 
         Transcriber()
-        print("Whisper Ditado import self-test passed")
+        print(f"{APP_NAME} import self-test passed")
         return 0
 
     store = ConfigStore()

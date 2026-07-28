@@ -1,3 +1,5 @@
+"""Local faster-whisper model integration."""
+
 from __future__ import annotations
 
 import os

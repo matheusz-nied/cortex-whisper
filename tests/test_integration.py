@@ -3,12 +3,12 @@ from __future__ import annotations
 import subprocess
 from types import SimpleNamespace
 
-from whisper_ditado.integration import SystemIntegration
+from pulsar_whisper.integration import SystemIntegration
 
 
 def test_wayland_copy_uses_wl_copy(monkeypatch):
     monkeypatch.setenv("XDG_SESSION_TYPE", "wayland")
-    monkeypatch.setattr("whisper_ditado.integration.shutil.which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr("pulsar_whisper.integration.shutil.which", lambda name: f"/usr/bin/{name}")
     called = {}
 
     def run(command, **kwargs):
@@ -16,7 +16,7 @@ def test_wayland_copy_uses_wl_copy(monkeypatch):
         called["input"] = kwargs["input"]
         return SimpleNamespace(returncode=0, stderr="")
 
-    monkeypatch.setattr("whisper_ditado.integration.subprocess.run", run)
+    monkeypatch.setattr("pulsar_whisper.integration.subprocess.run", run)
     copied, backend = SystemIntegration().copy_text("Hello ")
 
     assert copied is True
@@ -26,12 +26,12 @@ def test_wayland_copy_uses_wl_copy(monkeypatch):
 
 def test_ydotool_timeout_becomes_a_visible_error(monkeypatch):
     monkeypatch.setenv("XDG_SESSION_TYPE", "wayland")
-    monkeypatch.setattr("whisper_ditado.integration.shutil.which", lambda _name: "/usr/bin/ydotool")
+    monkeypatch.setattr("pulsar_whisper.integration.shutil.which", lambda _name: "/usr/bin/ydotool")
 
     def run(*_args, **_kwargs):
         raise subprocess.TimeoutExpired("ydotool", 5)
 
-    monkeypatch.setattr("whisper_ditado.integration.subprocess.run", run)
+    monkeypatch.setattr("pulsar_whisper.integration.subprocess.run", run)
     pasted, error = SystemIntegration().paste()
 
     assert pasted is False

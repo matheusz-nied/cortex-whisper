@@ -3,13 +3,15 @@ requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "whisper-ditado"
-version = "2.0.0"
-description = "Private, local voice dictation powered by Whisper"
+name = "pulsar-whisper"
+dynamic = ["version"]
+description = "Private, local AI voice dictation"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
+authors = [{ name = "Matheus Fernandes da Silva", email = "matheusz.nied@gmail.com" }]
+maintainers = [{ name = "Matheus Fernandes da Silva", email = "matheusz.nied@gmail.com" }]
 dependencies = [
   "faster-whisper>=1.2.1,<2",
   "numpy>=2.2,<3",
@@ -20,13 +22,22 @@ dependencies = [
 ]
 
 [project.scripts]
-whisper-ditado = "whisper_ditado.__main__:main"
+pulsar-whisper = "pulsar_whisper.__main__:main"
+whisper-ditado = "pulsar_whisper.__main__:main"
 
 [project.gui-scripts]
-whisper-ditado-gui = "whisper_ditado.__main__:main"
+pulsar-whisper-gui = "pulsar_whisper.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/matheusz-nied/pulsar-whisper"
+Repository = "https://github.com/matheusz-nied/pulsar-whisper"
+Issues = "https://github.com/matheusz-nied/pulsar-whisper/issues"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+
+[tool.setuptools.dynamic]
+version = { attr = "pulsar_whisper.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

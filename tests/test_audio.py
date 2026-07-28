@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from whisper_ditado.audio import SAMPLE_RATE, resample_audio
+from pulsar_whisper.audio import SAMPLE_RATE, resample_audio
 
 
 def test_resample_keeps_float32_and_duration():
@@ -15,4 +15,3 @@ def test_resample_keeps_float32_and_duration():
 def test_empty_audio_is_safe():
     result = resample_audio(np.empty(0, dtype=np.float32), 48_000)
     assert result.size == 0
-

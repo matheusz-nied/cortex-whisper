@@ -1,0 +1,1 @@
+"""Pulsar Whisper visual components."""

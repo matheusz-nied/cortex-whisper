@@ -1,3 +1,5 @@
+"""Application state definitions."""
+
 from __future__ import annotations
 
 from enum import StrEnum
@@ -11,4 +13,3 @@ class AppState(StrEnum):
     SUCCESS = "success"
     ERROR = "error"
     PAUSED = "paused"
-

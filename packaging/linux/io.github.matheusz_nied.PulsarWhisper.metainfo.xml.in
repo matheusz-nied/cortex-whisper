@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.matheusz_nied.PulsarWhisper</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Pulsar Whisper</name>
+  <summary>Private, local AI voice dictation</summary>
+  <description>
+    <p>
+      Pulsar Whisper records speech while you hold F8, transcribes it locally,
+      and pastes the result into the focused application.
+    </p>
+    <p>
+      It provides a compact status overlay, microphone and model selection,
+      system tray controls, and local processing through faster-whisper.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.matheusz_nied.PulsarWhisper.desktop</launchable>
+  <provides>
+    <binary>pulsar-whisper</binary>
+  </provides>
+  <url type="homepage">https://github.com/matheusz-nied/pulsar-whisper</url>
+  <url type="bugtracker">https://github.com/matheusz-nied/pulsar-whisper/issues</url>
+  <developer id="io.github.matheusz_nied">
+    <name>Matheus Fernandes da Silva</name>
+  </developer>
+  <releases>
+    <release version="@VERSION@" date="2026-07-27" type="development">
+      <description>
+        <p>Initial public beta for Linux.</p>
+      </description>
+    </release>
+  </releases>
+  <content_rating type="oars-1.1" />
+</component>

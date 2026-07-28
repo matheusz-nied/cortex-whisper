@@ -1,3 +1,5 @@
+"""Cross-platform global hotkey backends."""
+
 from __future__ import annotations
 
 import os
@@ -8,6 +10,8 @@ import threading
 from collections.abc import Callable
 from pathlib import Path
 from typing import Protocol
+
+from .metadata import APP_ID
 
 
 class HotkeyBackend(Protocol):
@@ -71,11 +75,11 @@ class PynputHotkey:
 def portal_helper_path() -> Path:
     candidates = []
     if getattr(sys, "_MEIPASS", None):
-        candidates.append(Path(sys._MEIPASS) / "atalho_wayland.py")
+        candidates.append(Path(sys._MEIPASS) / "pulsar_shortcut_portal.py")
     candidates.extend(
         [
-            Path(__file__).resolve().parents[2] / "atalho_wayland.py",
-            Path.cwd() / "atalho_wayland.py",
+            Path(__file__).resolve().parents[2] / "pulsar_shortcut_portal.py",
+            Path.cwd() / "pulsar_shortcut_portal.py",
         ]
     )
     return next((path for path in candidates if path.exists()), candidates[0])
@@ -104,7 +108,15 @@ class PortalHotkey:
         if not helper.exists() or not python:
             raise RuntimeError("the portal helper or system Python could not be found")
         self.process = subprocess.Popen(
-            [python, "-u", str(helper), "--trigger", self.key_name],
+            [
+                python,
+                "-u",
+                str(helper),
+                "--trigger",
+                self.key_name,
+                "--app-id",
+                APP_ID,
+            ],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,

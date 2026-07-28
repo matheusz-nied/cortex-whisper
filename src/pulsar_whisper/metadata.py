@@ -1,0 +1,17 @@
+"""Canonical product identity used by the app and release tooling."""
+
+APP_NAME = "Pulsar Whisper"
+APP_COMPACT_NAME = "PulsarWhisper"
+APP_SLUG = "pulsar-whisper"
+APP_ID = "io.github.matheusz_nied.PulsarWhisper"
+APP_VERSION = "0.1.0"
+APP_RELEASE_LABEL = "0.1.0 Beta"
+APP_DESCRIPTION = "Private, local AI voice dictation"
+APP_MAINTAINER = "Matheus Fernandes da Silva"
+APP_MAINTAINER_EMAIL = "matheusz.nied@gmail.com"
+APP_REPOSITORY = "https://github.com/matheusz-nied/pulsar-whisper"
+
+LEGACY_APP_NAME = "Whisper Ditado"
+LEGACY_COMPACT_NAME = "WhisperDitado"
+LEGACY_SLUG = "whisper-ditado"
+LEGACY_APP_ID = "io.github.kaizen.WhisperDitado"

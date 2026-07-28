@@ -1,3 +1,5 @@
+"""Pulsar Whisper settings window."""
+
 from __future__ import annotations
 
 from dataclasses import replace
@@ -20,6 +22,7 @@ from PySide6.QtWidgets import (
 
 from ..audio import AudioRecorder, InputDevice
 from ..config import AppConfig
+from ..metadata import APP_NAME
 
 
 class SettingsDialog(QDialog):
@@ -31,11 +34,11 @@ class SettingsDialog(QDialog):
         self.config = config
         self.test_recorder: AudioRecorder | None = None
         self.devices: list[InputDevice] = []
-        self.setWindowTitle("Whisper Ditado — Settings")
+        self.setWindowTitle(f"{APP_NAME} — Settings")
         self.setMinimumWidth(470)
 
         root = QVBoxLayout(self)
-        title = QLabel("<h2>Whisper Ditado</h2><p>Private, local dictation — always ready on F8.</p>")
+        title = QLabel(f"<h2>{APP_NAME}</h2><p>Private, local dictation — always ready on F8.</p>")
         root.addWidget(title)
 
         essentials = QGroupBox("Essential settings")

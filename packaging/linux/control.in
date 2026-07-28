@@ -1,10 +1,14 @@
-Package: whisper-ditado
-Version: 2.0.0
+Package: pulsar-whisper
+Version: @VERSION@
 Section: utils
 Priority: optional
 Architecture: amd64
-Maintainer: Whisper Ditado <local@whisper-ditado.invalid>
+Maintainer: Matheus Fernandes da Silva <matheusz.nied@gmail.com>
+Homepage: https://github.com/matheusz-nied/pulsar-whisper
 Depends: libportaudio2, libxcb-cursor0, libxcb-icccm4, libxcb-image0, libxcb-keysyms1, libxcb-render-util0, python3, python3-dbus, python3-gi
 Recommends: ydotool, wl-clipboard
-Description: Private, local voice dictation powered by Whisper
+Conflicts: whisper-ditado
+Replaces: whisper-ditado
+Provides: whisper-ditado
+Description: Private, local AI voice dictation
  Tray application for local speech transcription using faster-whisper.

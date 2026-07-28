@@ -1,3 +1,5 @@
+"""Operating-system integration for clipboard, paste, and startup."""
+
 from __future__ import annotations
 
 import os
@@ -7,9 +9,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-from .config import APP_NAME
-
-APP_ID = "io.github.kaizen.WhisperDitado"
+from .metadata import (
+    APP_COMPACT_NAME,
+    APP_DESCRIPTION,
+    APP_ID,
+    APP_NAME,
+    LEGACY_APP_ID,
+    LEGACY_COMPACT_NAME,
+)
 
 
 def launch_command() -> list[str]:
@@ -17,7 +24,7 @@ def launch_command() -> list[str]:
         return [os.environ["APPIMAGE"]]
     if getattr(sys, "frozen", False):
         return [sys.executable]
-    return [sys.executable, str(Path(__file__).resolve().parents[2] / "ditado.py")]
+    return [sys.executable, str(Path(__file__).resolve().parents[2] / "pulsar_whisper.py")]
 
 
 def command_string(command: list[str]) -> str:
@@ -116,14 +123,18 @@ class SystemIntegration:
         if self.platform != "linux":
             return
         system_entry = Path("/usr/share/applications") / f"{APP_ID}.desktop"
+        legacy_user_entry = (
+            Path.home() / ".local" / "share" / "applications" / f"{LEGACY_APP_ID}.desktop"
+        )
+        legacy_user_entry.unlink(missing_ok=True)
         if system_entry.exists():
             return
         user_entry = Path.home() / ".local" / "share" / "applications" / f"{APP_ID}.desktop"
         content = (
             "[Desktop Entry]\n"
             "Type=Application\n"
-            "Name=Whisper Ditado\n"
-            "Comment=Private, local voice dictation powered by Whisper\n"
+            f"Name={APP_NAME}\n"
+            f"Comment={APP_DESCRIPTION}\n"
             f"Exec={command_string(launch_command())}\n"
             "Icon=audio-input-microphone-symbolic\n"
             "Terminal=false\n"
@@ -142,26 +153,39 @@ class SystemIntegration:
             path = r"Software\Microsoft\Windows\CurrentVersion\Run"
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, path, 0, winreg.KEY_SET_VALUE) as key:
                 if enabled:
-                    winreg.SetValueEx(key, APP_NAME, 0, winreg.REG_SZ, command_string(launch_command()))
+                    winreg.SetValueEx(
+                        key,
+                        APP_COMPACT_NAME,
+                        0,
+                        winreg.REG_SZ,
+                        command_string(launch_command()),
+                    )
                 else:
                     try:
-                        winreg.DeleteValue(key, APP_NAME)
+                        winreg.DeleteValue(key, APP_COMPACT_NAME)
                     except FileNotFoundError:
                         pass
+                try:
+                    winreg.DeleteValue(key, LEGACY_COMPACT_NAME)
+                except FileNotFoundError:
+                    pass
             return
 
         desktop = Path.home() / ".config" / "autostart" / f"{APP_ID}.desktop"
+        legacy_desktop = desktop.with_name(f"{LEGACY_APP_ID}.desktop")
         if not enabled:
             desktop.unlink(missing_ok=True)
+            legacy_desktop.unlink(missing_ok=True)
             return
         desktop.parent.mkdir(parents=True, exist_ok=True)
         desktop.write_text(
             "[Desktop Entry]\n"
             "Type=Application\n"
-            "Name=Whisper Ditado\n"
+            f"Name={APP_NAME}\n"
             f"Exec={command_string(launch_command())}\n"
             "Icon=audio-input-microphone-symbolic\n"
             "Terminal=false\n"
             "X-GNOME-Autostart-enabled=true\n",
             encoding="utf-8",
         )
+        legacy_desktop.unlink(missing_ok=True)

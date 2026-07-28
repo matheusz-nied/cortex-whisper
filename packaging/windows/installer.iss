@@ -1,17 +1,19 @@
-#define MyAppName "Whisper Ditado"
-#define MyAppVersion "2.0.0"
-#define MyAppPublisher "Whisper Ditado"
-#define MyAppExeName "whisper-ditado.exe"
+#define MyAppName "Pulsar Whisper"
+#ifndef MyAppVersion
+  #define MyAppVersion "0.0.0-dev"
+#endif
+#define MyAppPublisher "Matheus Fernandes da Silva"
+#define MyAppExeName "pulsar-whisper.exe"
 
 [Setup]
 AppId={{B7D20D6B-4368-4D44-9127-11904E17E4A6}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-DefaultDirName={autopf}\Whisper Ditado
-DefaultGroupName=Whisper Ditado
+DefaultDirName={autopf}\Pulsar Whisper
+DefaultGroupName=Pulsar Whisper
 OutputDir=..\..\dist
-OutputBaseFilename=Whisper-Ditado-Setup-2.0.0
+OutputBaseFilename=Pulsar-Whisper-Setup-{#MyAppVersion}
 Compression=lzma2
 SolidCompression=yes
 ArchitecturesAllowed=x64compatible
@@ -21,7 +23,7 @@ WizardStyle=modern
 LicenseFile=..\..\LICENSE
 
 [Files]
-Source: "..\..\dist\whisper-ditado\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\dist\pulsar-whisper\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\build\legal\BUNDLED_COMPONENTS.md"; DestDir: "{app}"; Flags: ignoreversion
@@ -29,15 +31,15 @@ Source: "..\..\build\legal\NATIVE_COMPONENTS.md"; DestDir: "{app}"; Flags: ignor
 Source: "..\..\build\legal\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\Whisper Ditado"; Filename: "{app}\{#MyAppExeName}"
-Name: "{userdesktop}\Whisper Ditado"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{group}\Pulsar Whisper"; Filename: "{app}\{#MyAppExeName}"
+Name: "{userdesktop}\Pulsar Whisper"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"
-Name: "startup"; Description: "Start Whisper Ditado with Windows"; GroupDescription: "Startup:"; Flags: checkedonce
+Name: "startup"; Description: "Start Pulsar Whisper with Windows"; GroupDescription: "Startup:"; Flags: checkedonce
 
 [Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "WhisperDitado"; ValueData: """{app}\{#MyAppExeName}"""; Tasks: startup; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "PulsarWhisper"; ValueData: """{app}\{#MyAppExeName}"""; Tasks: startup; Flags: uninsdeletevalue
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "Launch Whisper Ditado"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "Launch Pulsar Whisper"; Flags: nowait postinstall skipifsilent

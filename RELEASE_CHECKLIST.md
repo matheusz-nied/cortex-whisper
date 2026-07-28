@@ -1,10 +1,11 @@
-# Whisper Ditado Release Checklist
+# Pulsar Whisper Release Checklist
 
 This document tracks the work required for the first public release. Update each
 item from `[ ]` to `[x]` only after it has been implemented and verified.
 
 ## Current release target
 
+- Product name: `Pulsar Whisper`
 - Recommended version: `v0.1.0 Beta`
 - Primary platform: Linux x86_64 with GNOME/Wayland
 - Linux/X11 status: implemented, broader testing required
@@ -27,13 +28,14 @@ Decision record:
 
 | Decision | Value |
 | --- | --- |
+| Product name | Pulsar Whisper |
 | License | MIT |
 | Copyright holder | Matheus Fernandes da Silva |
 | First public version | `v0.1.0 Beta` |
 | GitHub owner | `matheusz-nied` |
 | Public maintainer email | `matheusz.nied@gmail.com` |
-| Final repository URL | `https://github.com/matheusz-nied/whisper-ditado` (planned) |
-| Final Linux application ID | `io.github.kaizen.WhisperDitado` — must be confirmed |
+| Final repository URL | `https://github.com/matheusz-nied/pulsar-whisper` (planned) |
+| Final Linux application ID | `io.github.matheusz_nied.PulsarWhisper` |
 
 ## 1. License the project
 
@@ -61,7 +63,7 @@ References:
 
 ## 2. Document third-party licenses
 
-The project license applies to original Whisper Ditado code. Bundled dependencies
+The project license applies to original Pulsar Whisper code. Bundled dependencies
 retain their own licenses.
 
 - [x] Create `THIRD_PARTY_NOTICES.md`.
@@ -71,7 +73,7 @@ retain their own licenses.
 - [x] Collect Debian copyright notices for bundled Linux system libraries.
 - [x] Include the relevant license texts in binary distributions.
 - [x] Add license files to the Debian package under
-      `/usr/share/doc/whisper-ditado/`.
+      `/usr/share/doc/pulsar-whisper/`.
 - [x] Add license files to the AppImage.
 - [x] Add license files to the Windows installer.
 - [x] Review LGPL obligations for PySide6/Qt and `pynput`.
@@ -81,7 +83,7 @@ retain their own licenses.
 Release blocker discovered and resolved during the audit:
 
 - [x] Exclude PyAV, FFmpeg, and bundled native codecs from frozen releases because
-      Whisper Ditado transcribes NumPy microphone samples and does not use file decoding.
+      Pulsar Whisper transcribes NumPy microphone samples and does not use file decoding.
 - [ ] Re-audit PyAV, FFmpeg, native codecs, notices, and corresponding-source
       obligations if audio-file input is ever added to the application.
 - [x] Remove the unused GPL-only Qt Virtual Keyboard components from release bundles.
@@ -103,19 +105,20 @@ Reference:
 
 ## 3. Establish release identity and versioning
 
-The current internal version is `2.0.0`. A beta version is more appropriate for
-the first public Linux-tested release.
+The first public release is versioned as `0.1.0 Beta` because it has only been
+validated on the primary Linux environment.
 
 - [x] Decide between `v0.1.0 Beta` and `v1.0.0`: `v0.1.0 Beta`.
-- [ ] Centralize the version in one source file.
-- [ ] Remove hard-coded version duplication from Python, Debian, Inno Setup, and build scripts.
-- [ ] Generate artifact names from the central version.
-- [ ] Confirm the final product name: `Whisper Ditado`.
+- [x] Centralize the version in one source file.
+- [x] Remove hard-coded version duplication from Python, Debian, Inno Setup, and build scripts.
+- [x] Generate artifact names from the central version.
+- [x] Confirm the final product name: `Pulsar Whisper`.
 - [x] Confirm the final GitHub owner: `matheusz-nied`.
-- [ ] Replace `local@whisper-ditado.invalid` with a public maintainer email.
-- [ ] Confirm or change `io.github.kaizen.WhisperDitado` before the first release.
+- [x] Replace the placeholder with the public maintainer email.
+- [x] Set the application ID to `io.github.matheusz_nied.PulsarWhisper`.
 - [ ] Confirm the Windows application GUID will remain stable.
-- [ ] Check for naming conflicts and avoid implying official affiliation with Whisper's creators.
+- [ ] Complete GitHub, PyPI, domain, INPI, and international trademark searches.
+- [x] Add a clear statement that the independent project is not affiliated with or endorsed by OpenAI.
 
 Changing the Linux application ID after release may affect settings, autostart,
 desktop integration, and GNOME shortcut permissions.
@@ -131,7 +134,7 @@ Current local state:
 
 Steps:
 
-- [ ] Create an empty GitHub repository named `whisper-ditado`.
+- [ ] Create an empty GitHub repository named `pulsar-whisper`.
 - [ ] Do not generate another README, license, or `.gitignore` during creation.
 - [ ] Add the remote:
 
@@ -175,16 +178,16 @@ linux wayland python pyside6 privacy
 - [x] Build an AppImage locally.
 - [x] Provide a desktop entry and scalable icon.
 - [x] Declare `ydotool` and `wl-clipboard` package recommendations.
-- [ ] Add `io.github.kaizen.WhisperDitado.metainfo.xml`.
-- [ ] Include name, summary, description, version, license, and launchable ID.
+- [x] Add generated `io.github.matheusz_nied.PulsarWhisper.metainfo.xml` metadata.
+- [x] Include name, summary, description, version, license, and launchable ID.
 - [ ] Validate AppStream metadata:
 
 ```bash
-appstreamcli validate io.github.kaizen.WhisperDitado.metainfo.xml
+appstreamcli validate io.github.matheusz_nied.PulsarWhisper.metainfo.xml
 ```
 
-- [ ] Install license and third-party notice files with every package.
-- [ ] Verify Debian package ownership and permissions.
+- [x] Install license and third-party notice files with every package.
+- [x] Verify Debian package ownership and permissions.
 - [ ] Verify application menu integration.
 - [ ] Verify upgrade from one package version to the next.
 - [ ] Verify clean uninstallation.
@@ -215,15 +218,15 @@ should not be published as universal Linux release artifacts.
 - [ ] Add packaged executable smoke tests:
 
 ```bash
-whisper-ditado --version
-whisper-ditado --help
-whisper-ditado --diagnostics
-whisper-ditado --self-test
+pulsar-whisper --version
+pulsar-whisper --help
+pulsar-whisper --diagnostics
+pulsar-whisper --self-test
 ```
 
 - [ ] Validate the Debian control metadata in CI.
 - [ ] Validate AppStream metadata in CI.
-- [ ] Generate `SHA256SUMS` automatically.
+- [x] Generate `SHA256SUMS` automatically.
 - [ ] Upload packages to a GitHub Release, not only workflow artifacts.
 - [ ] Pin or verify downloaded packaging tools such as `appimagetool`.
 - [ ] Consider pinning GitHub Actions by commit SHA.
@@ -302,7 +305,7 @@ caches, settings, virtual environments, or development packages.
 Suggested short description:
 
 ```text
-Whisper Ditado is a private, local voice dictation app. Hold F8, speak,
+Pulsar Whisper is a private, local voice dictation app. Hold F8, speak,
 and release to transcribe and paste anywhere.
 ```
 
@@ -343,7 +346,7 @@ macOS is not part of the first release.
 - [ ] Create an annotated tag:
 
 ```bash
-git tag -a v0.1.0 -m "Whisper Ditado v0.1.0 Beta"
+git tag -a v0.1.0 -m "Pulsar Whisper v0.1.0 Beta"
 git push origin v0.1.0
 ```
 
@@ -381,8 +384,8 @@ Create the landing page after a stable repository and Release URL exist.
 ## Recommended execution order
 
 - [x] 1. Choose license, copyright holder, GitHub owner, email, and public version.
-- [ ] 2. Add legal files and third-party notices.
-- [ ] 3. Centralize versioning and finalize application identifiers.
+- [x] 2. Add legal files and third-party notices.
+- [x] 3. Centralize versioning and finalize application identifiers.
 - [ ] 4. Add community, AppStream, privacy, and security files.
 - [ ] 5. Improve CI and release automation.
 - [ ] 6. Create and push the GitHub repository.

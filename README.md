@@ -1,22 +1,25 @@
-# Whisper Ditado
+# Pulsar Whisper
 
-Private, local voice dictation powered by `faster-whisper`.
+Private, local AI voice dictation powered by `faster-whisper`.
 
-Hold **F8**, speak, and release the key. Whisper Ditado records your voice,
-transcribes it on your computer, and pastes the result into the application that
-already has focus. A compact cyberpunk-inspired overlay shows when the app is
-recording, decoding, or finished.
+Hold **F8**, speak, and release. Pulsar Whisper records your voice, transcribes
+it on your computer, and pastes the result into the application that already has
+focus. A compact cyberpunk-inspired overlay shows when the app is recording,
+transcribing, or finished.
 
 <p align="center">
   <img src="docs/assets/overlay-recording.png" alt="Recording overlay" width="248">
-  <img src="docs/assets/overlay-decoding.png" alt="Decoding overlay" width="248">
+  <img src="docs/assets/overlay-decoding.png" alt="Transcribing overlay" width="248">
   <img src="docs/assets/overlay-success.png" alt="Success overlay" width="248">
 </p>
 
 > [!IMPORTANT]
-> Linux with GNOME/Wayland is the only platform validated on real hardware so
-> far. Windows support is implemented but still experimental. macOS is not yet
-> implemented.
+> Version **0.1.0 Beta** is validated only on Linux with GNOME/Wayland. Windows
+> support is experimental and has not been tested on real hardware. macOS is not
+> implemented yet.
+
+Pulsar Whisper is an independent open-source project. It is not affiliated with,
+endorsed by, or sponsored by OpenAI.
 
 ## Platform status
 
@@ -24,32 +27,30 @@ recording, decoding, or finished.
 | --- | --- | --- |
 | Linux / GNOME Wayland | Tested | Primary development platform |
 | Linux / X11 | Implemented | Needs broader testing |
-| Windows 10/11 | Experimental | Build and installer are available, but untested on real hardware |
-| macOS | Not supported yet | Platform integration has not been implemented |
+| Windows 10/11 | Experimental | Build and installer exist, but need real-hardware testing |
+| macOS | Not supported | Platform integration has not been implemented |
 
 ## Features
 
 - Hold-to-talk global hotkey, with **F8** as the default.
-- Fully local transcription: recorded audio is never sent to an application server.
+- Local transcription; recorded audio is never sent to an application server.
 - `small` and `medium` Whisper models with persistent selection.
 - CPU inference with `int8` quantization and an automatic CUDA attempt when available.
 - Microphone selection and a built-in three-second input test.
-- Compact neon status overlay for recording, decoding, success, and error states.
-- Automatic clipboard delivery and paste into the focused application.
-- System tray controls, pause mode, rotating logs, and optional automatic startup.
+- Compact neon overlay for recording, transcribing, success, and errors.
+- Clipboard delivery and automatic paste into the focused application.
+- Tray controls, pause mode, rotating logs, and optional automatic startup.
 - GUI and terminal modes.
 
-The interface and documentation are in English. Transcription currently defaults
-to Portuguese (`pt`) to preserve the project's original use case.
-
-## How it works
+The interface and documentation are in English. Transcription defaults to
+Portuguese (`pt`) for the project's original use case.
 
 ```text
 Hold F8 → record audio → release F8 → transcribe locally → copy → paste
 ```
 
-Whisper models are not bundled with the application. The selected model is
-downloaded to the user's cache on first use and reused on subsequent launches.
+Models are not bundled. The selected model is downloaded to the user's Hugging
+Face cache on first use and reused afterward.
 
 ## Linux requirements
 
@@ -60,174 +61,121 @@ sudo apt install libportaudio2 wl-clipboard ydotool python3-dbus python3-gi
 systemctl --user enable --now ydotool.service
 ```
 
-GNOME/Wayland asks for permission to register the global shortcut the first time
-the application starts. `wl-copy` provides a reliable Wayland clipboard, while
-`ydotool` sends Ctrl+V to the focused application.
+GNOME/Wayland requests permission for the global shortcut on first launch.
+`wl-copy` provides the clipboard and `ydotool` sends Ctrl+V to the focused app.
 
 ## Run from source
 
 Python 3.10 or newer is required.
 
 ```bash
-cd whisper-ditado
+git clone https://github.com/matheusz-nied/pulsar-whisper.git
+cd pulsar-whisper
 python3 -m venv venv
 source venv/bin/activate
 python -m pip install -r requirements.txt
-python ditado.py
+python pulsar_whisper.py
 ```
 
-## Install on Linux
+The former `python ditado.py` entry point remains as a temporary compatibility alias.
 
-### Debian package
-
-Build and install the local package:
+## Build and install on Linux
 
 ```bash
 source venv/bin/activate
 python -m pip install -r requirements-dev.txt
 PYTHON_BIN=venv/bin/python scripts/build_linux.sh
-sudo apt install ./dist/whisper-ditado_2.0.0_amd64.deb
+sudo apt install ./dist/pulsar-whisper_0.1.0_amd64.deb
 ```
 
 Launch it from the application menu or run:
 
 ```bash
-whisper-ditado
+pulsar-whisper
 ```
 
-### AppImage
-
-When `appimagetool` is available, the Linux build script also creates:
-
-```text
-dist/Whisper-Ditado-2.0.0-x86_64.AppImage
-```
-
-Run it with:
-
-```bash
-chmod +x dist/Whisper-Ditado-2.0.0-x86_64.AppImage
-./dist/Whisper-Ditado-2.0.0-x86_64.AppImage
-```
+When `appimagetool` is installed, the same script creates
+`dist/Pulsar-Whisper-0.1.0-x86_64.AppImage`.
 
 ## Usage
 
-1. Start Whisper Ditado and wait for the model to become ready.
-2. Place the cursor in any text field.
-3. Press and hold **F8** while speaking.
-4. Release **F8** to transcribe and paste the text.
-5. Use the tray menu to pause dictation, open Settings, inspect logs, or quit.
+1. Start Pulsar Whisper and wait for the model to become ready.
+2. Place the cursor in a text field.
+3. Hold **F8** while speaking.
+4. Release **F8** to transcribe and paste.
+5. Use the tray menu to pause, open Settings, inspect logs, or quit.
 
-The status overlay is centered by the Wayland compositor on the active display.
-This avoids stealing focus and works reliably with multi-monitor layouts.
+The overlay stays centered on the active display. This is reliable on Wayland
+and avoids stealing focus in multi-monitor layouts.
 
-## Settings
+Settings include the model, microphone, an F6–F12 hold-to-talk hotkey, automatic
+startup, and a live microphone test.
 
-The settings window provides:
-
-- Whisper model: `small` or `medium`.
-- Input microphone.
-- Hold-to-talk hotkey from F6 through F12.
-- Automatic startup.
-- Live microphone test.
-
-Settings persist in the operating system's standard user configuration directory.
-
-## Command-line interface
+## Command line
 
 ```bash
-python ditado.py --help
-python ditado.py --version
-python ditado.py --list-microphones
-python ditado.py --diagnostics
-python ditado.py --no-gui --model medium
-python ditado.py --microphone "ME6S"
+python pulsar_whisper.py --help
+python pulsar_whisper.py --version
+python pulsar_whisper.py --list-microphones
+python pulsar_whisper.py --diagnostics
+python pulsar_whisper.py --no-gui --model medium
+python pulsar_whisper.py --microphone "ME6S"
 ```
 
 Terminal mode uses Enter to start and stop recording and `q` to quit.
 
 ## Data and privacy
 
-- Audio is processed locally by `faster-whisper`.
-- Audio recordings are kept in memory and are not saved to disk.
+- Audio is processed locally by `faster-whisper`, kept in memory, and not saved.
 - Transcribed text is placed in the system clipboard.
-- The model provider may be contacted only when a model must be downloaded.
-- Application logs contain operational events and character counts, not the
-  transcribed text itself.
-
-Default locations:
+- Hugging Face may be contacted when a model must be downloaded.
+- There is no telemetry.
+- Logs contain operational events and character counts, never transcribed text.
 
 | Data | Linux | Windows |
 | --- | --- | --- |
-| Configuration | `~/.config/WhisperDitado/config.json` | `%APPDATA%\WhisperDitado\config.json` |
-| Logs | `~/.local/state/WhisperDitado/log/` | `%LOCALAPPDATA%\WhisperDitado\Logs\` |
-| Model cache | Hugging Face user cache | Hugging Face user cache |
+| Configuration | `~/.config/PulsarWhisper/config.json` | `%LOCALAPPDATA%\PulsarWhisper\config.json` |
+| Logs | `~/.local/state/PulsarWhisper/log/` | `%LOCALAPPDATA%\PulsarWhisper\Logs\` |
+| Models | Hugging Face user cache | Hugging Face user cache |
+
+Existing `WhisperDitado` configuration and logs are copied automatically on the
+first Pulsar Whisper launch. The originals are retained as a recovery backup.
 
 ## Development
 
-Install development dependencies:
-
 ```bash
 python -m pip install -r requirements-dev.txt
-```
-
-Run the quality checks:
-
-```bash
 python -m ruff check .
 python -m pytest
-python -m compileall -q ditado.py atalho_wayland.py src
+python -m compileall -q pulsar_whisper.py pulsar_shortcut_portal.py src
 ```
 
-Current automated coverage includes configuration migration, audio resampling,
-application states, Wayland clipboard integration, and paste failure handling.
-
-## Packaging
-
-Linux:
-
-```bash
-PYTHON_BIN=venv/bin/python scripts/build_linux.sh
-```
-
-Windows, from PowerShell with Inno Setup installed:
-
-```powershell
-scripts\build_windows.ps1
-```
-
-Tagged releases and manual workflow runs are configured to test and package the
-project through GitHub Actions.
+Build Linux packages with `PYTHON_BIN=venv/bin/python scripts/build_linux.sh`.
+On Windows, install Inno Setup and run `scripts\build_windows.ps1` from PowerShell.
+Tagged releases and manual runs are configured in GitHub Actions.
 
 ## Known limitations
 
-- The Wayland global shortcut currently depends on GNOME's Global Shortcuts portal.
+- Wayland global shortcuts currently depend on GNOME's Global Shortcuts portal.
 - Automatic paste on Wayland requires a working `ydotool` user service.
-- The overlay is centered on the active monitor because Wayland intentionally
-  prevents regular applications from reading global pointer coordinates.
-- Windows packaging has not yet been validated on a physical Windows machine.
-- macOS hotkeys, paste integration, packaging, and startup behavior are not implemented.
+- Wayland prevents normal applications from reading global pointer coordinates,
+  so the overlay is centered rather than attached to the pointer.
+- Windows packaging has not been validated on a physical Windows machine.
+- macOS hotkeys, paste integration, packaging, and startup are not implemented.
 
-## Roadmap
-
-- Validate and harden the Windows build.
-- Add native macOS support.
-- Add an in-app transcription language selector.
-- Publish signed release artifacts and checksums.
-- Create the public landing page and release media.
+See the [release checklist](RELEASE_CHECKLIST.md) for the full launch roadmap.
 
 ## Contributing
 
 Bug reports and focused pull requests are welcome. Include the operating system,
-desktop session, microphone model, application logs, and reproduction steps when
-reporting platform-integration issues.
+desktop session, microphone, logs, and reproduction steps for integration issues.
 
 ## License
 
-Whisper Ditado is released under the [MIT License](LICENSE).
+Pulsar Whisper is released under the [MIT License](LICENSE).
 
 Copyright (c) 2026 Matheus Fernandes da Silva.
 
-Bundled libraries retain their own licenses. See
+Bundled libraries retain their own licenses. See the
 [Third-Party Notices](THIRD_PARTY_NOTICES.md) for the audited dependency inventory
 and binary-distribution notes.

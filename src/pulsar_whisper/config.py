@@ -1,14 +1,18 @@
+"""Persistent configuration and legacy migration."""
+
 from __future__ import annotations
 
 import json
+import shutil
 import tempfile
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 
 from platformdirs import user_config_dir, user_log_dir
 
-APP_NAME = "WhisperDitado"
-APP_AUTHOR = "WhisperDitado"
+from .metadata import APP_COMPACT_NAME, LEGACY_COMPACT_NAME
+
+APP_NAME = APP_COMPACT_NAME
 CONFIG_VERSION = 2
 
 
@@ -35,17 +39,33 @@ class AppConfig:
 
 
 class ConfigStore:
-    def __init__(self, path: Path | None = None) -> None:
-        self.path = path or Path(user_config_dir(APP_NAME, APP_AUTHOR)) / "config.json"
+    def __init__(self, path: Path | None = None, legacy_path: Path | None = None) -> None:
+        self.path = path or Path(user_config_dir(APP_NAME, appauthor=False)) / "config.json"
+        self.legacy_path = legacy_path
+        if path is None and legacy_path is None:
+            self.legacy_path = (
+                Path(user_config_dir(LEGACY_COMPACT_NAME, LEGACY_COMPACT_NAME)) / "config.json"
+            )
 
     def load(self) -> AppConfig:
-        if not self.path.exists():
+        source = self.path
+        migrated = False
+        if not source.exists() and self.legacy_path and self.legacy_path.exists():
+            source = self.legacy_path
+            migrated = True
+        if not source.exists():
             return AppConfig()
         try:
-            raw = json.loads(self.path.read_text(encoding="utf-8"))
+            raw = json.loads(source.read_text(encoding="utf-8"))
             allowed = {field.name for field in fields(AppConfig)}
             values = {key: value for key, value in raw.items() if key in allowed}
-            return AppConfig(**values).normalized()
+            config = AppConfig(**values).normalized()
+            if migrated:
+                try:
+                    self.save(config)
+                except OSError:
+                    pass
+            return config
         except (OSError, ValueError, TypeError, json.JSONDecodeError):
             return AppConfig()
 
@@ -67,6 +87,15 @@ class ConfigStore:
 
 
 def log_directory() -> Path:
-    path = Path(user_log_dir(APP_NAME, APP_AUTHOR))
+    path = Path(user_log_dir(APP_NAME, appauthor=False))
     path.mkdir(parents=True, exist_ok=True)
+    legacy = Path(user_log_dir(LEGACY_COMPACT_NAME, LEGACY_COMPACT_NAME))
+    if legacy.is_dir() and legacy != path:
+        for source in legacy.iterdir():
+            target = path / source.name.replace("whisper-ditado", "pulsar-whisper")
+            if source.is_file() and not target.exists():
+                try:
+                    shutil.copy2(source, target)
+                except OSError:
+                    pass
     return path

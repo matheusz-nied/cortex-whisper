@@ -1,3 +1,5 @@
+"""Microphone discovery, capture, and resampling."""
+
 from __future__ import annotations
 
 import queue

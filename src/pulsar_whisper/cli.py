@@ -1,3 +1,5 @@
+"""Command-line utilities and terminal dictation mode."""
+
 from __future__ import annotations
 
 import json
@@ -14,7 +16,12 @@ from .integration import SystemIntegration
 def list_microphones() -> int:
     default_found = False
     print("Available microphones:\n")
-    for device in AudioRecorder.devices():
+    try:
+        devices = AudioRecorder.devices()
+    except Exception as exc:
+        print(f"Microphone discovery failed: {exc}", file=sys.stderr)
+        return 1
+    for device in devices:
         marker = " [default]" if device.is_default else ""
         default_found = default_found or device.is_default
         print(
@@ -29,6 +36,12 @@ def list_microphones() -> int:
 def diagnostics() -> int:
     config = ConfigStore().load()
     integration = SystemIntegration()
+    try:
+        microphone_count: int | None = len(AudioRecorder.devices())
+        microphone_error: str | None = None
+    except Exception as exc:
+        microphone_count = None
+        microphone_error = str(exc)
     data = {
         "app_version": __version__,
         "python": sys.version.split()[0],
@@ -38,7 +51,8 @@ def diagnostics() -> int:
         "microphone": config.microphone,
         "hotkey": config.hotkey,
         "paste_backend": integration.paste_backend,
-        "microphones": len(AudioRecorder.devices()),
+        "microphones": microphone_count,
+        "microphone_error": microphone_error,
     }
     print(json.dumps(data, indent=2, ensure_ascii=False))
     return 0
