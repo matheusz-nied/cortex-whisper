@@ -32,7 +32,7 @@ def configure_logging() -> Path:
     root.setLevel(logging.INFO)
     root.addHandler(handler)
     root.addHandler(terminal_handler)
-    root.info("Whisper Ditado iniciado; log em %s", log_file)
+    root.info("Whisper Ditado started; log file: %s", log_file)
     return log_file
 
 
@@ -70,11 +70,11 @@ class SingleInstance(QObject):
             socket.write(QByteArray(b"show"))
             socket.waitForBytesWritten(500)
             if socket.waitForReadyRead(700) and bytes(socket.readAll()) == b"ok":
-                self.message = "O Whisper Ditado já está aberto; exibindo as configurações."
+                self.message = "Whisper Ditado is already running; opening Settings."
             else:
                 self.message = (
-                    "Outra instância do Whisper Ditado existe, mas não respondeu. "
-                    "Ela pode estar suspensa; use 'jobs -l' e encerre-a antes de tentar novamente."
+                    "Another Whisper Ditado instance exists but did not respond. "
+                    "It may be suspended; run 'jobs -l' and stop it before trying again."
                 )
             socket.disconnectFromServer()
             return False
@@ -103,13 +103,13 @@ class WhisperDitadoApplication(QObject):
         self.tray = QSystemTrayIcon(tray_icon("#5da9ff"), self)
         self.menu = QMenu()
 
-        self.status_action = QAction("Carregando modelo…", self.menu)
+        self.status_action = QAction("Loading model…", self.menu)
         self.status_action.setEnabled(False)
-        self.pause_action = QAction("Pausar ditado", self.menu)
+        self.pause_action = QAction("Pause dictation", self.menu)
         self.pause_action.setCheckable(True)
-        settings_action = QAction("Configurações…", self.menu)
-        logs_action = QAction("Abrir pasta de logs", self.menu)
-        quit_action = QAction("Sair", self.menu)
+        settings_action = QAction("Settings…", self.menu)
+        logs_action = QAction("Open logs folder", self.menu)
+        quit_action = QAction("Quit", self.menu)
         self.menu.addAction(self.status_action)
         self.menu.addSeparator()
         self.menu.addAction(self.pause_action)
@@ -140,13 +140,13 @@ class WhisperDitadoApplication(QObject):
     def _state_changed(self, state: str, message: str) -> None:
         parsed = AppState(state)
         labels = {
-            AppState.LOADING: message or "Carregando modelo…",
-            AppState.READY: f"Pronto — segure {self.controller.config.hotkey}",
-            AppState.RECORDING: "Gravando…",
-            AppState.TRANSCRIBING: "Transcrevendo…",
-            AppState.SUCCESS: "Transcrição concluída",
-            AppState.ERROR: message or "Erro",
-            AppState.PAUSED: "Ditado pausado",
+            AppState.LOADING: message or "Loading model…",
+            AppState.READY: f"Ready — hold {self.controller.config.hotkey}",
+            AppState.RECORDING: "Recording…",
+            AppState.TRANSCRIBING: "Transcribing…",
+            AppState.SUCCESS: "Transcription completed",
+            AppState.ERROR: message or "Error",
+            AppState.PAUSED: "Dictation paused",
         }
         colors = {
             AppState.RECORDING: "#ff4d5a",
@@ -205,7 +205,7 @@ def run_gui() -> int:
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     log_file = configure_logging()
-    logging.getLogger(__name__).info("Backend gráfico Qt: %s", app.platformName())
+    logging.getLogger(__name__).info("Qt graphics backend: %s", app.platformName())
     instance = SingleInstance()
     if not instance.acquire():
         logging.getLogger(__name__).warning(instance.message)
@@ -216,21 +216,21 @@ def run_gui() -> int:
     app.aboutToQuit.connect(whisper_app.controller.shutdown)
 
     def handle_shutdown_signal(signum, _frame) -> None:
-        logging.getLogger(__name__).info("Sinal %s recebido; encerrando", signum)
+        logging.getLogger(__name__).info("Received signal %s; shutting down", signum)
         whisper_app.quit()
 
     signal.signal(signal.SIGINT, handle_shutdown_signal)
     if hasattr(signal, "SIGTERM"):
         signal.signal(signal.SIGTERM, handle_shutdown_signal)
 
-    # O event loop nativo do Qt precisa devolver o controle ao Python
-    # periodicamente para que SIGINT (Ctrl+C) seja processado.
+    # The native Qt event loop must return control to Python periodically so
+    # SIGINT (Ctrl+C) can be processed.
     signal_pump = QTimer()
     signal_pump.setInterval(150)
     signal_pump.timeout.connect(lambda: None)
     signal_pump.start()
     whisper_app.start()
-    # As referências precisam sobreviver enquanto o loop de eventos estiver ativo.
+    # Keep these references alive for the duration of the event loop.
     app._single_instance = instance  # type: ignore[attr-defined]
     app._whisper_app = whisper_app  # type: ignore[attr-defined]
     app._signal_pump = signal_pump  # type: ignore[attr-defined]

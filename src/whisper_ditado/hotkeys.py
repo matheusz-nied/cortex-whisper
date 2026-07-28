@@ -102,7 +102,7 @@ class PortalHotkey:
         helper = portal_helper_path()
         python = shutil.which("python3", path="/usr/bin:/bin")
         if not helper.exists() or not python:
-            raise RuntimeError("helper do portal ou Python do sistema não encontrado")
+            raise RuntimeError("the portal helper or system Python could not be found")
         self.process = subprocess.Popen(
             [python, "-u", str(helper), "--trigger", self.key_name],
             stdout=subprocess.PIPE,
@@ -124,7 +124,7 @@ class PortalHotkey:
             elif line.startswith("ERROR:"):
                 self.on_error(line.removeprefix("ERROR:").strip())
         if self.process.poll() not in {0, None}:
-            self.on_error("o serviço de atalho global foi encerrado")
+            self.on_error("the global hotkey service stopped unexpectedly")
 
     def stop(self) -> None:
         if self.process is not None and self.process.poll() is None:
@@ -141,4 +141,3 @@ def create_hotkey_backend(
     if sys.platform.startswith("linux") and os.environ.get("XDG_SESSION_TYPE", "").casefold() == "wayland":
         return PortalHotkey(key_name, on_press, on_release, on_error)
     return PynputHotkey(key_name, on_press, on_release)
-

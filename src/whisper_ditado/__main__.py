@@ -8,23 +8,23 @@ from .config import ConfigStore
 
 
 def parser() -> argparse.ArgumentParser:
-    result = argparse.ArgumentParser(description="Whisper Ditado — ditado local multiplataforma")
+    result = argparse.ArgumentParser(description="Whisper Ditado — private, local voice dictation")
     result.add_argument("--version", action="version", version=__version__)
-    result.add_argument("--listar-microfones", action="store_true")
-    result.add_argument("--diagnostico", action="store_true")
-    result.add_argument("--sem-interface", action="store_true")
-    result.add_argument("--modelo", choices=("small", "medium"))
-    result.add_argument("--microfone")
+    result.add_argument("--list-microphones", action="store_true")
+    result.add_argument("--diagnostics", action="store_true")
+    result.add_argument("--no-gui", action="store_true")
+    result.add_argument("--model", choices=("small", "medium"))
+    result.add_argument("--microphone")
     return result
 
 
 def main() -> int:
     args = parser().parse_args()
-    if args.listar_microfones:
+    if args.list_microphones:
         from .cli import list_microphones
 
         return list_microphones()
-    if args.diagnostico:
+    if args.diagnostics:
         from .cli import diagnostics
 
         return diagnostics()
@@ -32,15 +32,15 @@ def main() -> int:
     store = ConfigStore()
     config = store.load()
     changed = False
-    if args.modelo:
-        config.model = args.modelo
+    if args.model:
+        config.model = args.model
         changed = True
-    if args.microfone:
-        config.microphone = args.microfone
+    if args.microphone:
+        config.microphone = args.microphone
         changed = True
     if changed:
         store.save(config)
-    if args.sem_interface:
+    if args.no_gui:
         from .cli import run_terminal
 
         return run_terminal(config.model, config.microphone, config.language)

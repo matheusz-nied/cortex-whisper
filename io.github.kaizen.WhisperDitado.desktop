@@ -1,10 +1,10 @@
 [Desktop Entry]
 Type=Application
 Name=Whisper Ditado
-Comment=Ditado local em português com Whisper
+Comment=Private, local voice dictation powered by Whisper
 Exec=whisper-ditado
 Icon=whisper-ditado
 Terminal=false
 Categories=Utility;
-Keywords=whisper;ditado;voz;transcrição;fala;
+Keywords=whisper;dictation;voice;transcription;speech;
 StartupNotify=false

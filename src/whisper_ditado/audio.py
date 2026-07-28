@@ -60,7 +60,7 @@ class AudioRecorder:
             try:
                 host_name = str(host_apis[int(raw["hostapi"])]["name"])
             except Exception:
-                host_name = "desconhecida"
+                host_name = "unknown"
             result.append(
                 InputDevice(
                     index=index,
@@ -95,7 +95,7 @@ class AudioRecorder:
     def _callback(self, indata, frames, time_info, status) -> None:
         del frames, time_info
         if status:
-            # PortAudio também informa overflow por status; os quadros úteis ainda são mantidos.
+            # PortAudio may report overflow here; valid frames are still preserved.
             pass
         if not self._recording:
             return
@@ -127,7 +127,7 @@ class AudioRecorder:
                 return stream, rate
             except Exception as exc:
                 last_error = exc
-        raise AudioError(str(last_error or "falha desconhecida ao abrir o microfone"))
+        raise AudioError(str(last_error or "unknown error while opening the microphone"))
 
     def start(self, microphone_hint: str) -> str:
         if self._recording:
@@ -135,7 +135,7 @@ class AudioRecorder:
         self._queue = queue.Queue()
         failures: list[str] = []
         for device in self.candidates(microphone_hint):
-            name = device.name if device else "dispositivo padrão"
+            name = device.name if device else "default device"
             try:
                 self._stream, self._sample_rate = self._open(device)
                 self.active_device = name
@@ -143,7 +143,7 @@ class AudioRecorder:
                 return name
             except Exception as exc:
                 failures.append(f"{name}: {exc}")
-        raise AudioError("Não foi possível abrir um microfone. " + " | ".join(failures))
+        raise AudioError("Could not open a microphone. " + " | ".join(failures))
 
     def stop(self) -> np.ndarray:
         if not self._recording:

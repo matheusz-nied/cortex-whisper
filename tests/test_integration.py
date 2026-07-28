@@ -17,11 +17,11 @@ def test_wayland_copy_uses_wl_copy(monkeypatch):
         return SimpleNamespace(returncode=0, stderr="")
 
     monkeypatch.setattr("whisper_ditado.integration.subprocess.run", run)
-    copied, backend = SystemIntegration().copy_text("Olá ")
+    copied, backend = SystemIntegration().copy_text("Hello ")
 
     assert copied is True
     assert backend == "wl-copy"
-    assert called == {"command": ["wl-copy"], "input": "Olá "}
+    assert called == {"command": ["wl-copy"], "input": "Hello "}
 
 
 def test_ydotool_timeout_becomes_a_visible_error(monkeypatch):
@@ -36,4 +36,3 @@ def test_ydotool_timeout_becomes_a_visible_error(monkeypatch):
 
     assert pasted is False
     assert "ydotool" in error
-

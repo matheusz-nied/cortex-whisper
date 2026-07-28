@@ -67,8 +67,8 @@ class SystemIntegration:
                 command,
                 input=text,
                 stdout=subprocess.DEVNULL,
-                # wl-copy deixa um filho mantendo a seleção. PIPE esperaria o
-                # descritor desse filho fechar e causaria um falso timeout.
+                # wl-copy leaves a child process owning the selection. PIPE
+                # would wait for its descriptor and cause a false timeout.
                 stderr=subprocess.DEVNULL,
                 text=True,
                 check=False,
@@ -78,12 +78,12 @@ class SystemIntegration:
             return False, f"{backend}: {exc}"
         if result.returncode == 0:
             return True, backend
-        return False, f"{backend}: código de saída {result.returncode}"
+        return False, f"{backend}: exit code {result.returncode}"
 
     def paste(self) -> tuple[bool, str]:
         if self.platform == "linux" and os.environ.get("XDG_SESSION_TYPE", "").casefold() == "wayland":
             if not shutil.which("ydotool"):
-                return False, "ydotool não instalado; use Ctrl+V"
+                return False, "ydotool is not installed; press Ctrl+V to paste"
             try:
                 result = subprocess.run(
                     ["ydotool", "key", "29:1", "47:1", "47:0", "29:0"],
@@ -97,7 +97,7 @@ class SystemIntegration:
             if result.returncode == 0:
                 return True, ""
             detail = result.stderr.strip() or result.stdout.strip()
-            return False, detail or f"ydotool terminou com código {result.returncode}"
+            return False, detail or f"ydotool exited with code {result.returncode}"
 
         from pynput.keyboard import Controller, Key
 
@@ -123,7 +123,7 @@ class SystemIntegration:
             "[Desktop Entry]\n"
             "Type=Application\n"
             "Name=Whisper Ditado\n"
-            "Comment=Ditado local em português com Whisper\n"
+            "Comment=Private, local voice dictation powered by Whisper\n"
             f"Exec={command_string(launch_command())}\n"
             "Icon=audio-input-microphone-symbolic\n"
             "Terminal=false\n"

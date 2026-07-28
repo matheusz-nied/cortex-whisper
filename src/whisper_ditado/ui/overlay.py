@@ -45,8 +45,8 @@ class StatusOverlay(QWidget):
             self.timer.stop()
             self.hide()
             return
-        # No Wayland, deixar o compositor posicionar a nova superfície faz com
-        # que ela apareça no centro do monitor atualmente ativo.
+        # On Wayland, letting the compositor place a new surface centers it on
+        # the currently active monitor.
         if not (
             self.position_mode == "screen_center" and QGuiApplication.platformName() == "wayland"
         ):
@@ -121,14 +121,14 @@ class StatusOverlay(QWidget):
             self._paint_recording(painter)
         elif self.state in {AppState.TRANSCRIBING, AppState.LOADING}:
             self._paint_spinner(painter, QColor("#36e7ff"))
-            label = "DECODIFICANDO" if self.state == AppState.TRANSCRIBING else "INICIALIZANDO"
+            label = "DECODING" if self.state == AppState.TRANSCRIBING else "INITIALIZING"
             self._paint_text(painter, label)
         elif self.state == AppState.SUCCESS:
             self._paint_check(painter)
-            self._paint_text(painter, "TEXTO INSERIDO")
+            self._paint_text(painter, "TEXT INSERTED")
         else:
             self._paint_error(painter)
-            self._paint_text(painter, self.message or "FALHA NO SISTEMA")
+            self._paint_text(painter, self.message or "SYSTEM ERROR")
 
     def _accent_color(self) -> QColor:
         colors = {

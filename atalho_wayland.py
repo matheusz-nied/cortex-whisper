@@ -1,8 +1,8 @@
 #!/usr/bin/python3
-"""Expõe os eventos de um atalho do portal como linhas em stdout.
+"""Expose portal global-shortcut events as lines on stdout.
 
-Este helper roda com o Python do sistema, que já possui dbus-python e PyGObject.
-O processo principal continua usando o ambiente virtual do projeto.
+This helper runs with system Python, which provides dbus-python and PyGObject.
+The main application continues to use the project's virtual environment.
 """
 
 from __future__ import annotations
@@ -73,8 +73,8 @@ class GlobalShortcut:
         )
 
     def start(self) -> None:
-        # Processos Python executados diretamente não recebem um App ID do GNOME.
-        # O Registry associa esta conexão ao arquivo .desktop instalado localmente.
+        # Directly executed Python processes do not receive a GNOME App ID. The
+        # Registry associates this connection with the locally installed desktop file.
         self.registry.Register(
             dbus.String(APP_ID),
             dbus.Dictionary({}, signature="sv"),
@@ -97,7 +97,7 @@ class GlobalShortcut:
 
     def on_session_created(self, response, results) -> None:
         if int(response) != 0:
-            self.fail(f"criação da sessão recusada (código {int(response)})")
+            self.fail(f"session creation was denied (code {int(response)})")
             return
 
         self.session_handle = str(results["session_handle"])
@@ -107,7 +107,7 @@ class GlobalShortcut:
 
         properties = dbus.Dictionary(
             {
-                "description": dbus.String("Segure para ditar"),
+                "description": dbus.String("Hold to dictate"),
                 "preferred_trigger": dbus.String(self.trigger),
             },
             signature="sv",
@@ -130,12 +130,12 @@ class GlobalShortcut:
 
     def on_shortcut_bound(self, response, results) -> None:
         if int(response) != 0:
-            self.fail(f"configuração do atalho {self.trigger} recusada (código {int(response)})")
+            self.fail(f"shortcut {self.trigger} was denied (code {int(response)})")
             return
 
         shortcuts = results.get("shortcuts", [])
         if not any(str(shortcut[0]) == SHORTCUT_ID for shortcut in shortcuts):
-            self.fail("nenhum atalho foi autorizado")
+            self.fail("no shortcut was authorized")
             return
         emit("READY")
 

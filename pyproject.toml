@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "whisper-ditado"
 version = "2.0.0"
-description = "Ditado local e privado com Whisper para Linux e Windows"
+description = "Private, local voice dictation powered by Whisper"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

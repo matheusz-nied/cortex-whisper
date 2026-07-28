@@ -36,7 +36,7 @@ class Controller(QObject):
         self.store = store
         self.config = store.load()
         self.state = AppState.LOADING
-        self.message = "Carregando modelo…"
+        self.message = "Loading model…"
         self.integration = SystemIntegration()
         self.recorder = AudioRecorder(level_callback=self.audio_level.emit)
         self.transcriber = Transcriber()
@@ -55,17 +55,17 @@ class Controller(QObject):
 
     @property
     def backend_summary(self) -> str:
-        hotkey = self.hotkey.name if self.hotkey else "iniciando"
+        hotkey = self.hotkey.name if self.hotkey else "starting"
         model = self.transcriber.info
         model_text = f"{model.name} / {model.device}" if model else self.config.model
-        return f"Atalho: {hotkey} · Colagem: {self.integration.paste_backend} · Modelo: {model_text}"
+        return f"Hotkey: {hotkey} · Paste: {self.integration.paste_backend} · Model: {model_text}"
 
     def start(self) -> None:
         try:
             self.integration.ensure_application_entry()
             self.integration.set_autostart(self.config.autostart)
         except Exception as exc:
-            LOGGER.warning("Não foi possível integrar o aplicativo ao sistema: %s", exc)
+            LOGGER.warning("Could not integrate the application with the operating system: %s", exc)
         self._start_hotkey()
         self.load_model(self.config.model)
 
@@ -89,7 +89,7 @@ class Controller(QObject):
         self.state_changed.emit(state.value, message)
 
     def load_model(self, model_name: str) -> None:
-        self.set_state(AppState.LOADING, f"Carregando {model_name}…")
+        self.set_state(AppState.LOADING, f"Loading {model_name}…")
         future = self.executor.submit(self.transcriber.load, model_name)
         future.add_done_callback(self._complete_model)
 
@@ -97,33 +97,33 @@ class Controller(QObject):
         try:
             self._model_result.emit(future.result())
         except Exception as exc:
-            LOGGER.exception("Falha ao carregar modelo")
+            LOGGER.exception("Failed to load the model")
             self._model_failure.emit(str(exc))
 
     @Slot(object)
     def _on_model_loaded(self, info: ModelInfo) -> None:
         self.config.model = info.name
         self.store.save(self.config)
-        LOGGER.info("Modelo pronto: %s em %s (%s)", info.name, info.device, info.compute_type)
-        self.model_changed.emit(f"{info.name} na {info.device.upper()}")
+        LOGGER.info("Model ready: %s on %s (%s)", info.name, info.device, info.compute_type)
+        self.model_changed.emit(f"{info.name} on {info.device.upper()}")
         self.set_state(AppState.PAUSED if self.paused else AppState.READY)
 
     @Slot(str)
     def _on_model_failed(self, error: str) -> None:
-        self.set_state(AppState.ERROR, "Falha ao carregar o modelo")
-        self.notification.emit("Erro no modelo Whisper", error)
+        self.set_state(AppState.ERROR, "Failed to load the model")
+        self.notification.emit("Whisper model error", error)
 
     @Slot()
     def _on_hotkey_pressed(self) -> None:
         if self.state != AppState.READY or self.paused:
             return
-        self.set_state(AppState.RECORDING, "Gravando")
+        self.set_state(AppState.RECORDING, "Recording")
         try:
             device = self.recorder.start(self.config.microphone)
-            LOGGER.info("Gravação iniciada em %s", device)
+            LOGGER.info("Recording started from %s", device)
         except AudioError as exc:
-            self.set_state(AppState.ERROR, "Microfone indisponível")
-            self.notification.emit("Microfone indisponível", str(exc))
+            self.set_state(AppState.ERROR, "Microphone unavailable")
+            self.notification.emit("Microphone unavailable", str(exc))
             QTimer.singleShot(2500, self._return_to_ready)
 
     @Slot()
@@ -133,13 +133,13 @@ class Controller(QObject):
         audio = self.recorder.stop()
         self.audio_level.emit(0.0)
         if audio.size == 0:
-            self._transcription_failure.emit("Nenhum áudio foi capturado")
+            self._transcription_failure.emit("No audio was captured")
             return
         max_volume = float(np.abs(audio).max(initial=0.0))
         if max_volume < 0.005:
-            self._transcription_failure.emit("O áudio está muito baixo")
+            self._transcription_failure.emit("The audio is too quiet")
             return
-        self.set_state(AppState.TRANSCRIBING, "Transcrevendo…")
+        self.set_state(AppState.TRANSCRIBING, "Transcribing…")
         future = self.executor.submit(self.transcriber.transcribe, audio, self.config.language)
         future.add_done_callback(self._complete_transcription)
 
@@ -147,54 +147,53 @@ class Controller(QObject):
         try:
             self._transcription_result.emit(future.result())
         except Exception as exc:
-            LOGGER.exception("Falha na transcrição")
+            LOGGER.exception("Transcription failed")
             self._transcription_failure.emit(str(exc))
 
     @Slot(str)
     def _on_transcribed(self, text: str) -> None:
         if not text:
-            self._on_transcription_failed("Nenhuma fala foi reconhecida")
+            self._on_transcription_failed("No speech was recognized")
             return
-        LOGGER.info("Transcrição concluída (%d caracteres)", len(text))
+        LOGGER.info("Transcription completed (%d characters)", len(text))
         text_with_space = f"{text} "
         QGuiApplication.clipboard().setText(text_with_space)
         copied, clipboard_backend = self.integration.copy_text(text_with_space)
         if copied:
-            LOGGER.info("Texto colocado no clipboard por %s", clipboard_backend)
+            LOGGER.info("Text copied to the clipboard via %s", clipboard_backend)
         else:
-            LOGGER.warning("Falha no clipboard nativo: %s; mantendo fallback do Qt", clipboard_backend)
-        # Remova a superfície flutuante antes do Ctrl+V. Alguns compositores
-        # Wayland consideram a última superfície elevada como alvo de teclado,
-        # mesmo quando ela declara que não aceita foco.
+            LOGGER.warning("Native clipboard failed: %s; keeping the Qt fallback", clipboard_backend)
+        # Hide the floating surface before Ctrl+V. Some Wayland compositors may
+        # treat the last raised surface as a keyboard target despite no-focus hints.
         self.prepare_paste.emit()
-        LOGGER.info("Pílula ocultada; aguardando o aplicativo de destino reassumir o foco")
+        LOGGER.info("Overlay hidden; waiting for the target application to regain focus")
         QTimer.singleShot(350, self._paste_transcription)
 
     def _paste_transcription(self) -> None:
         try:
             pasted, error = self.integration.paste()
         except Exception as exc:
-            LOGGER.exception("Erro inesperado durante a colagem")
+            LOGGER.exception("Unexpected error while pasting")
             pasted, error = False, str(exc)
         if pasted:
-            LOGGER.info("Comando de colagem enviado por %s", self.integration.paste_backend)
+            LOGGER.info("Paste command sent via %s", self.integration.paste_backend)
         else:
-            LOGGER.error("Falha ao colar: %s", error)
-        self.set_state(AppState.SUCCESS, "Pronto" if pasted else "Copiado")
+            LOGGER.error("Paste failed: %s", error)
+        self.set_state(AppState.SUCCESS, "Ready" if pasted else "Copied")
         if not pasted:
-            self.notification.emit("Transcrição copiada", error)
+            self.notification.emit("Transcription copied", error)
         QTimer.singleShot(850, self._return_to_ready)
 
     @Slot(str)
     def _on_transcription_failed(self, error: str) -> None:
         self.set_state(AppState.ERROR, error)
-        self.notification.emit("Não foi possível transcrever", error)
+        self.notification.emit("Could not transcribe the audio", error)
         QTimer.singleShot(2500, self._return_to_ready)
 
     @Slot(str)
     def _on_hotkey_error(self, error: str) -> None:
-        LOGGER.error("Atalho global: %s", error)
-        self.notification.emit("Atalho global indisponível", error)
+        LOGGER.error("Global hotkey: %s", error)
+        self.notification.emit("Global hotkey unavailable", error)
 
     def _return_to_ready(self) -> None:
         if self.state in {AppState.SUCCESS, AppState.ERROR}:
@@ -210,7 +209,7 @@ class Controller(QObject):
             try:
                 self.integration.set_autostart(self.config.autostart)
             except Exception as exc:
-                self.notification.emit("Inicialização automática", str(exc))
+                self.notification.emit("Automatic startup", str(exc))
         if old_hotkey != self.config.hotkey:
             self._start_hotkey()
         if old_model != self.config.model:
@@ -226,7 +225,7 @@ class Controller(QObject):
         if self._shutting_down:
             return
         self._shutting_down = True
-        LOGGER.info("Encerrando microfone, atalho global e tarefas do Whisper")
+        LOGGER.info("Stopping the microphone, global hotkey, and Whisper tasks")
         if self.hotkey:
             self.hotkey.stop()
         self.recorder.close()

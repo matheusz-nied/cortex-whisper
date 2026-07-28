@@ -37,7 +37,6 @@ class Transcriber:
 
     def transcribe(self, audio: np.ndarray, language: str = "pt") -> str:
         if self.model is None:
-            raise RuntimeError("O modelo Whisper ainda não foi carregado")
+            raise RuntimeError("The Whisper model has not been loaded yet")
         segments, _ = self.model.transcribe(audio, language=language, beam_size=1)
         return "".join(segment.text for segment in segments).strip()
-

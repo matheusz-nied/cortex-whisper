@@ -27,12 +27,11 @@ Name: "{group}\Whisper Ditado"; Filename: "{app}\{#MyAppExeName}"
 Name: "{userdesktop}\Whisper Ditado"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Tasks]
-Name: "desktopicon"; Description: "Criar atalho na área de trabalho"; GroupDescription: "Atalhos adicionais:"
-Name: "startup"; Description: "Iniciar Whisper Ditado com o Windows"; GroupDescription: "Inicialização:"; Flags: checkedonce
+Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"
+Name: "startup"; Description: "Start Whisper Ditado with Windows"; GroupDescription: "Startup:"; Flags: checkedonce
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "WhisperDitado"; ValueData: """{app}\{#MyAppExeName}"""; Tasks: startup; Flags: uninsdeletevalue
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "Abrir Whisper Ditado"; Flags: nowait postinstall skipifsilent
-
+Filename: "{app}\{#MyAppExeName}"; Description: "Launch Whisper Ditado"; Flags: nowait postinstall skipifsilent

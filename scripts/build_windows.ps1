@@ -6,7 +6,6 @@ python -m PyInstaller --noconfirm --clean packaging/whisper-ditado.spec
 
 $Inno = Get-Command ISCC.exe -ErrorAction SilentlyContinue
 if (-not $Inno) {
-    throw "Inno Setup não encontrado. Instale-o e execute o script novamente."
+    throw "Inno Setup was not found. Install it and run this script again."
 }
 & $Inno.Source packaging/windows/installer.iss
-

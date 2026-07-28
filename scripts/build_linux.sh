@@ -32,5 +32,5 @@ if command -v appimagetool >/dev/null 2>&1; then
   cp assets/whisper-ditado.svg "$APPDIR/whisper-ditado.svg"
   ARCH=x86_64 appimagetool "$APPDIR" "$PROJECT_DIR/dist/Whisper-Ditado-2.0.0-x86_64.AppImage"
 else
-  echo "appimagetool não encontrado; o .deb foi gerado e o AppImage foi ignorado."
+  echo "appimagetool was not found; the .deb was built and the AppImage was skipped."
 fi

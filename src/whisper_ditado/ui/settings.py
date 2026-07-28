@@ -31,44 +31,44 @@ class SettingsDialog(QDialog):
         self.config = config
         self.test_recorder: AudioRecorder | None = None
         self.devices: list[InputDevice] = []
-        self.setWindowTitle("Whisper Ditado — Configurações")
+        self.setWindowTitle("Whisper Ditado — Settings")
         self.setMinimumWidth(470)
 
         root = QVBoxLayout(self)
-        title = QLabel("<h2>Whisper Ditado</h2><p>Ditado local e privado, sempre pronto no F8.</p>")
+        title = QLabel("<h2>Whisper Ditado</h2><p>Private, local dictation — always ready on F8.</p>")
         root.addWidget(title)
 
-        essentials = QGroupBox("Configurações essenciais")
+        essentials = QGroupBox("Essential settings")
         form = QFormLayout(essentials)
         self.model_combo = QComboBox()
-        self.model_combo.addItem("Small — mais rápido", "small")
-        self.model_combo.addItem("Medium — mais preciso", "medium")
+        self.model_combo.addItem("Small — faster", "small")
+        self.model_combo.addItem("Medium — more accurate", "medium")
         self.model_combo.setCurrentIndex(max(0, self.model_combo.findData(config.model)))
-        form.addRow("Modelo Whisper:", self.model_combo)
+        form.addRow("Whisper model:", self.model_combo)
 
         mic_row = QHBoxLayout()
         self.microphone_combo = QComboBox()
-        refresh = QPushButton("Atualizar")
+        refresh = QPushButton("Refresh")
         refresh.clicked.connect(self.refresh_microphones)
         mic_row.addWidget(self.microphone_combo, 1)
         mic_row.addWidget(refresh)
-        form.addRow("Microfone:", mic_row)
+        form.addRow("Microphone:", mic_row)
 
         self.hotkey_combo = QComboBox()
         for number in range(6, 13):
             self.hotkey_combo.addItem(f"F{number}")
         index = self.hotkey_combo.findText(config.hotkey)
         self.hotkey_combo.setCurrentIndex(index if index >= 0 else 2)
-        form.addRow("Segurar para falar:", self.hotkey_combo)
+        form.addRow("Hold to speak:", self.hotkey_combo)
 
-        self.autostart_check = QCheckBox("Iniciar minimizado com o sistema")
+        self.autostart_check = QCheckBox("Start minimized with the system")
         self.autostart_check.setChecked(config.autostart)
         form.addRow("", self.autostart_check)
         root.addWidget(essentials)
 
-        test_group = QGroupBox("Teste rápido do microfone")
+        test_group = QGroupBox("Quick microphone test")
         test_layout = QHBoxLayout(test_group)
-        self.test_button = QPushButton("Testar por 3 segundos")
+        self.test_button = QPushButton("Test for 3 seconds")
         self.test_button.clicked.connect(self.test_microphone)
         self.level_bar = QProgressBar()
         self.level_bar.setRange(0, 100)
@@ -85,8 +85,8 @@ class SettingsDialog(QDialog):
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Close
         )
-        buttons.button(QDialogButtonBox.StandardButton.Save).setText("Salvar")
-        buttons.button(QDialogButtonBox.StandardButton.Close).setText("Fechar")
+        buttons.button(QDialogButtonBox.StandardButton.Save).setText("Save")
+        buttons.button(QDialogButtonBox.StandardButton.Close).setText("Close")
         buttons.accepted.connect(self.save)
         buttons.rejected.connect(self.hide)
         root.addWidget(buttons)
@@ -101,10 +101,10 @@ class SettingsDialog(QDialog):
         try:
             self.devices = AudioRecorder.devices()
         except Exception as exc:
-            self.microphone_combo.addItem(f"Erro: {exc}", selected)
+            self.microphone_combo.addItem(f"Error: {exc}", selected)
             return
         for device in self.devices:
-            suffix = " (padrão)" if device.is_default else ""
+            suffix = " (default)" if device.is_default else ""
             self.microphone_combo.addItem(f"{device.name}{suffix}", device.name)
         match = next(
             (
@@ -125,11 +125,11 @@ class SettingsDialog(QDialog):
         try:
             self.test_recorder.start(microphone)
         except Exception as exc:
-            QMessageBox.warning(self, "Teste do microfone", str(exc))
+            QMessageBox.warning(self, "Microphone test", str(exc))
             self.test_recorder = None
             return
         self.test_button.setEnabled(False)
-        self.test_button.setText("Fale agora…")
+        self.test_button.setText("Speak now…")
         QTimer.singleShot(3000, self._finish_test)
 
     def _finish_test(self) -> None:
@@ -137,7 +137,7 @@ class SettingsDialog(QDialog):
             self.test_recorder.stop()
             self.test_recorder = None
         self.test_button.setEnabled(True)
-        self.test_button.setText("Testar por 3 segundos")
+        self.test_button.setText("Test for 3 seconds")
         self.level_bar.setValue(0)
 
     @Slot(float)

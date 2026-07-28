@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Entrada compatível para executar o Whisper Ditado direto do repositório."""
+"""Compatibility entry point for running Whisper Ditado from the repository."""
 
 import sys
 from pathlib import Path

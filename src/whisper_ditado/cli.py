@@ -13,16 +13,16 @@ from .integration import SystemIntegration
 
 def list_microphones() -> int:
     default_found = False
-    print("Microfones encontrados:\n")
+    print("Available microphones:\n")
     for device in AudioRecorder.devices():
-        marker = " [padrão]" if device.is_default else ""
+        marker = " [default]" if device.is_default else ""
         default_found = default_found or device.is_default
         print(
             f"  {device.index:>3}: {device.name} — {device.host_api}, "
             f"{device.default_sample_rate} Hz{marker}"
         )
     if not default_found:
-        print("\nAviso: o PortAudio não informou um dispositivo padrão.")
+        print("\nWarning: PortAudio did not report a default input device.")
     return 0
 
 
@@ -50,23 +50,23 @@ def run_terminal(model_name: str, microphone: str, language: str = "pt") -> int:
     from .transcriber import Transcriber
 
     transcriber = Transcriber()
-    print(f"Carregando Whisper {model_name}…")
+    print(f"Loading Whisper {model_name}…")
     info = transcriber.load(model_name)
-    print(f"Pronto: {info.name} em {info.device.upper()} ({info.compute_type})")
+    print(f"Ready: {info.name} on {info.device.upper()} ({info.compute_type})")
     recorder = AudioRecorder()
-    print("Enter inicia/para a gravação; q encerra.")
+    print("Press Enter to start or stop recording; press q to quit.")
     while True:
         command = input().strip().casefold()
-        if command in {"q", "sair", "exit"}:
+        if command in {"q", "quit", "exit"}:
             return 0
         if not recorder.recording:
             device = recorder.start(microphone)
-            print(f"🔴 Gravando em {device}…")
+            print(f"🔴 Recording from {device}…")
             continue
         audio = recorder.stop()
         if audio.size == 0 or float(np.abs(audio).max(initial=0.0)) < 0.005:
-            print("Áudio vazio ou muito baixo.")
+            print("Audio is empty or too quiet.")
             continue
-        print("Transcrevendo…")
+        print("Transcribing…")
         text = transcriber.transcribe(audio, language)
         print(f"✅ {text}")
