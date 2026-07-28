@@ -227,3 +227,7 @@ reporting platform-integration issues.
 Whisper Ditado is released under the [MIT License](LICENSE).
 
 Copyright (c) 2026 Matheus Fernandes da Silva.
+
+Bundled libraries retain their own licenses. See
+[Third-Party Notices](THIRD_PARTY_NOTICES.md) for the audited dependency inventory
+and binary-distribution notes.

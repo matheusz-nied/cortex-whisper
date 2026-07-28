@@ -16,6 +16,7 @@ a = Analysis(
     datas=[
         (str(root / "atalho_wayland.py"), "."),
         (str(root / "assets" / "whisper-ditado.svg"), "assets"),
+        (str(root / "build" / "legal"), "legal"),
     ],
     hiddenimports=["faster_whisper", "sounddevice", "pynput", *keyboard_imports],
     hookspath=[],
@@ -44,8 +45,8 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    # No Linux, preserve stdout for --version/--diagnostico. No Windows, keep
-    # the tray application free of a console window.
+    # On Linux, preserve stdout for CLI commands. On Windows, keep the tray
+    # application free of a console window.
     console=sys.platform != "win32",
 )
 coll = COLLECT(

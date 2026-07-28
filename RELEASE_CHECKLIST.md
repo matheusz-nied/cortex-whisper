@@ -64,17 +64,23 @@ References:
 The project license applies to original Whisper Ditado code. Bundled dependencies
 retain their own licenses.
 
-- [ ] Create `THIRD_PARTY_NOTICES.md`.
-- [ ] Record every direct runtime dependency, version, project URL, and license.
-- [ ] Review transitive dependencies included by PyInstaller.
-- [ ] Include the relevant license texts in binary distributions.
-- [ ] Add license files to the Debian package under
+- [x] Create `THIRD_PARTY_NOTICES.md`.
+- [x] Record every direct runtime dependency, version, project URL, and license.
+- [x] Review transitive dependencies included by PyInstaller.
+- [x] Include the relevant license texts in binary distributions.
+- [x] Add license files to the Debian package under
       `/usr/share/doc/whisper-ditado/`.
-- [ ] Add license files to the AppImage.
-- [ ] Add license files to the Windows installer.
-- [ ] Review LGPL obligations for PySide6/Qt and `pynput`.
-- [ ] Confirm that bundled Qt libraries remain dynamically loadable and replaceable.
+- [x] Add license files to the AppImage.
+- [x] Add license files to the Windows installer.
+- [x] Review LGPL obligations for PySide6/Qt and `pynput`.
+- [x] Confirm that bundled Qt libraries remain dynamically loadable and replaceable.
 - [ ] Obtain legal review before significant commercial distribution, if needed.
+
+Release blocker discovered during the audit:
+
+- [ ] Re-audit each platform's PyAV wheel, bundled FFmpeg configuration, native
+      codec licenses, notices, and corresponding-source obligations.
+- [x] Remove the unused GPL-only Qt Virtual Keyboard components from release bundles.
 
 Known direct dependencies requiring review:
 

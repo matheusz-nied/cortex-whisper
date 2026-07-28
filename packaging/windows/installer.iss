@@ -18,9 +18,14 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=lowest
 WizardStyle=modern
+LicenseFile=..\..\LICENSE
 
 [Files]
 Source: "..\..\dist\whisper-ditado\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\build\legal\BUNDLED_COMPONENTS.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\build\legal\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\Whisper Ditado"; Filename: "{app}\{#MyAppExeName}"
