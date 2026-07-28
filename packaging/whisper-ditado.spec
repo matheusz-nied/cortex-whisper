@@ -20,8 +20,9 @@ a = Analysis(
     ],
     hiddenimports=["faster_whisper", "sounddevice", "pynput", *keyboard_imports],
     hookspath=[],
-    runtime_hooks=[],
+    runtime_hooks=[str(root / "packaging" / "runtime_hooks" / "pyi_rth_av_stub.py")],
     excludes=[
+        "av",
         "matplotlib",
         "pytest",
         "ruff",

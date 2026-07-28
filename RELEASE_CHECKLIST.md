@@ -67,6 +67,8 @@ retain their own licenses.
 - [x] Create `THIRD_PARTY_NOTICES.md`.
 - [x] Record every direct runtime dependency, version, project URL, and license.
 - [x] Review transitive dependencies included by PyInstaller.
+- [x] Generate a per-build native binary inventory with hashes and source packages.
+- [x] Collect Debian copyright notices for bundled Linux system libraries.
 - [x] Include the relevant license texts in binary distributions.
 - [x] Add license files to the Debian package under
       `/usr/share/doc/whisper-ditado/`.
@@ -76,10 +78,12 @@ retain their own licenses.
 - [x] Confirm that bundled Qt libraries remain dynamically loadable and replaceable.
 - [ ] Obtain legal review before significant commercial distribution, if needed.
 
-Release blocker discovered during the audit:
+Release blocker discovered and resolved during the audit:
 
-- [ ] Re-audit each platform's PyAV wheel, bundled FFmpeg configuration, native
-      codec licenses, notices, and corresponding-source obligations.
+- [x] Exclude PyAV, FFmpeg, and bundled native codecs from frozen releases because
+      Whisper Ditado transcribes NumPy microphone samples and does not use file decoding.
+- [ ] Re-audit PyAV, FFmpeg, native codecs, notices, and corresponding-source
+      obligations if audio-file input is ever added to the application.
 - [x] Remove the unused GPL-only Qt Virtual Keyboard components from release bundles.
 
 Known direct dependencies requiring review:
@@ -214,6 +218,7 @@ should not be published as universal Linux release artifacts.
 whisper-ditado --version
 whisper-ditado --help
 whisper-ditado --diagnostics
+whisper-ditado --self-test
 ```
 
 - [ ] Validate the Debian control metadata in CI.

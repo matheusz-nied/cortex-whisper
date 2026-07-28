@@ -58,6 +58,7 @@ BUILD_DISTRIBUTIONS = (
 )
 
 WINDOWS_DISTRIBUTIONS = ("colorama",)
+EXCLUDED_FROM_FROZEN = {"av"}
 LEGAL_FILE_NAMES = re.compile(r"^(licen[cs]e|copying|notice|thirdparty)", re.IGNORECASE)
 TEXT_SUFFIXES = {"", ".md", ".rst", ".txt"}
 
@@ -96,9 +97,9 @@ def collect(project_root: Path, output: Path) -> None:
         "",
         "Generated from the Python environment used for this build.",
         "",
-        "| Distribution | Version | Declared license | Copied license files |",
-        "| --- | --- | --- | ---: |",
-        f"| CPython | {platform.python_version()} | PSF-2.0 | 0 |",
+        "| Distribution | Version | Declared license | Release status | Copied license files |",
+        "| --- | --- | --- | --- | ---: |",
+        f"| CPython | {platform.python_version()} | PSF-2.0 | bundled | 0 |",
     ]
     missing = []
     names = RUNTIME_DISTRIBUTIONS + BUILD_DISTRIBUTIONS + WINDOWS_DISTRIBUTIONS
@@ -112,6 +113,7 @@ def collect(project_root: Path, output: Path) -> None:
         display_name = metadata.get("Name", name)
         license_expression = metadata.get("License-Expression") or metadata.get("License") or "See notice"
         license_expression = " ".join(license_expression.split()).replace("|", "/")
+        status = "excluded from frozen app" if name.lower() in EXCLUDED_FROM_FROZEN else "build environment"
         target = licenses_dir / f"{_safe_name(display_name)}-{package.version}"
         target.mkdir()
         copied = 0
@@ -128,7 +130,7 @@ def collect(project_root: Path, output: Path) -> None:
             target.rmdir()
             missing.append(display_name)
         inventory.append(
-            f"| {display_name} | {package.version} | {license_expression} | {copied} |"
+            f"| {display_name} | {package.version} | {license_expression} | {status} | {copied} |"
         )
 
     inventory.extend(

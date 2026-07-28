@@ -25,6 +25,7 @@ Source: "..\..\dist\whisper-ditado\*"; DestDir: "{app}"; Flags: ignoreversion re
 Source: "..\..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\build\legal\BUNDLED_COMPONENTS.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\build\legal\NATIVE_COMPONENTS.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\build\legal\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]

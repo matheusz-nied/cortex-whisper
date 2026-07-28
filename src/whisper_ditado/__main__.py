@@ -15,6 +15,7 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--no-gui", action="store_true")
     result.add_argument("--model", choices=("small", "medium"))
     result.add_argument("--microphone")
+    result.add_argument("--self-test", action="store_true", help=argparse.SUPPRESS)
     return result
 
 
@@ -28,6 +29,12 @@ def main() -> int:
         from .cli import diagnostics
 
         return diagnostics()
+    if args.self_test:
+        from .transcriber import Transcriber
+
+        Transcriber()
+        print("Whisper Ditado import self-test passed")
+        return 0
 
     store = ConfigStore()
     config = store.load()

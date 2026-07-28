@@ -7,6 +7,10 @@ import shutil
 from pathlib import Path
 
 UNUSED_GPL_COMPONENTS = (
+    "libQt6VirtualKeyboard.so.6",
+    "libQt6VirtualKeyboardQml.so.6",
+    "Qt6VirtualKeyboard.dll",
+    "Qt6VirtualKeyboardQml.dll",
     "PySide6/Qt/qml/QtQuick/VirtualKeyboard",
     "PySide6/Qt/plugins/platforminputcontexts/libqtvirtualkeyboardplugin.so",
     "PySide6/Qt/plugins/platforminputcontexts/qtvirtualkeyboardplugin.dll",

@@ -8,6 +8,11 @@ PYTHON_BIN="${PYTHON_BIN:-python3}"
 "$PYTHON_BIN" scripts/collect_licenses.py
 "$PYTHON_BIN" -m PyInstaller --noconfirm --clean packaging/whisper-ditado.spec
 "$PYTHON_BIN" scripts/prune_qt_components.py dist/whisper-ditado
+"$PYTHON_BIN" scripts/collect_native_notices.py \
+  --analysis build/whisper-ditado/Analysis-00.toc \
+  --bundle dist/whisper-ditado \
+  --legal build/legal
+cp -a build/legal/. dist/whisper-ditado/_internal/legal/
 
 PACKAGE_ROOT="$PROJECT_DIR/build/deb-root"
 rm -rf "$PACKAGE_ROOT"

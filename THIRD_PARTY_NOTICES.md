@@ -5,7 +5,8 @@ binary releases, redistributes third-party components under their own terms.
 Those terms are not replaced by the Whisper Ditado license.
 
 Release packages include this notice, the project's `LICENSE`, a generated
-component inventory, and the license files supplied by installed distributions.
+Python component inventory, a native binary inventory, and collected license
+files supplied by installed distributions and Linux system packages.
 Versions below describe the environment audited on July 27, 2026. The generated
 inventory inside each release is authoritative for that particular build.
 
@@ -25,7 +26,7 @@ inventory inside each release is authoritative for that particular build.
 | Component | Audited version | License | Project |
 | --- | ---: | --- | --- |
 | anyio | 4.14.2 | MIT | https://github.com/agronholm/anyio |
-| PyAV | 18.0.0 | BSD-3-Clause | https://github.com/PyAV-Org/PyAV |
+| PyAV | 18.0.0 | BSD-3-Clause; excluded from frozen releases | https://github.com/PyAV-Org/PyAV |
 | certifi | 2026.7.22 | MPL-2.0 | https://github.com/certifi/python-certifi |
 | CFFI | 2.1.0 | MIT-0 | https://github.com/python-cffi/cffi |
 | Click | 8.4.2 | BSD-3-Clause | https://github.com/pallets/click |
@@ -87,18 +88,28 @@ licensed, rather than LGPL-3.0.
 - Qt licensing and GPL-only modules: https://doc.qt.io/qt-6/licensing.html
 - Qt source archives: https://download.qt.io/archive/qt/
 
-## PyAV, FFmpeg, and native codec libraries
+## PyAV and FFmpeg
 
-PyAV wheels contain FFmpeg shared libraries and may contain additional native
-codec libraries. The audited Linux wheel reports FFmpeg 8.1.2 under LGPL-3.0-or-
-later, but its native library set includes separately licensed components. This
-area must be re-audited for every release platform and PyAV wheel before public
-binary distribution. In particular, verify the effective FFmpeg configuration,
-all codec-library notices, corresponding-source obligations, and that no
-non-redistributable component is present.
+`faster-whisper` declares PyAV as a dependency and imports it unconditionally.
+Whisper Ditado, however, supplies microphone samples directly as NumPy arrays,
+so PyAV's file-decoding path is never used. Frozen release packages therefore
+exclude PyAV, FFmpeg, and their native codec libraries. A runtime compatibility
+module satisfies faster-whisper's import and reports an explicit error if a
+future feature attempts to transcribe an audio file.
+
+Source installations may still install PyAV because it is a declared dependency
+of faster-whisper, but Whisper Ditado does not redistribute that source-install
+wheel. If file-input transcription is added later, the release process must
+restore and audit PyAV, FFmpeg, codec notices, effective licenses, and source-
+distribution obligations before shipping binaries.
 
 - PyAV: https://github.com/PyAV-Org/PyAV
 - FFmpeg license: https://ffmpeg.org/legal.html
+
+Native audio libraries such as libsndfile, Opus, and LAME can be included as
+dependencies of the host audio stack. They are unrelated to PyAV/FFmpeg. Linux
+builds record their exact Debian packages and copy the corresponding Debian
+copyright files into the release's `licenses` directory.
 
 ## ONNX Runtime
 

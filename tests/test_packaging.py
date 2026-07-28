@@ -1,6 +1,9 @@
+import runpy
+import sys
 from pathlib import Path
 
 from scripts.collect_licenses import collect
+from scripts.collect_native_notices import binary_entries
 from scripts.prune_qt_components import prune
 
 
@@ -28,10 +31,49 @@ def test_prune_removes_only_unused_qt_virtual_keyboard(tmp_path):
     qt_widgets.write_text("required", encoding="utf-8")
     virtual_keyboard_library = qt_root / "lib" / "libQt6VirtualKeyboard.so.6"
     virtual_keyboard_library.write_text("unused", encoding="utf-8")
+    duplicate_library = tmp_path / "bundle" / "_internal" / "libQt6VirtualKeyboard.so.6"
+    duplicate_library.write_text("unused", encoding="utf-8")
 
     removed = prune(tmp_path / "bundle")
 
-    assert len(removed) == 2
+    assert len(removed) == 3
     assert not virtual_keyboard.exists()
     assert not virtual_keyboard_library.exists()
+    assert not duplicate_library.exists()
     assert qt_widgets.exists()
+
+
+def test_frozen_pyav_stub_supports_import_but_rejects_file_api():
+    project_root = Path(__file__).resolve().parent.parent
+    hook = project_root / "packaging" / "runtime_hooks" / "pyi_rth_av_stub.py"
+    previous = sys.modules.pop("av", None)
+    try:
+        runpy.run_path(str(hook))
+        import av
+
+        assert "compatibility stub" in av.__file__
+        assert getattr(av, "__wrapped__", None) is None
+        try:
+            _ = av.open
+        except RuntimeError as exc:
+            assert "intentionally excluded" in str(exc)
+        else:
+            raise AssertionError("The PyAV compatibility stub unexpectedly exposed av.open")
+    finally:
+        sys.modules.pop("av", None)
+        if previous is not None:
+            sys.modules["av"] = previous
+
+
+def test_native_inventory_extracts_binary_entries_recursively():
+    toc = (
+        ["ignored"],
+        [("libexample.so", "/usr/lib/libexample.so", "BINARY")],
+        ("module.so", "/venv/module.so", "EXTENSION"),
+        ("module.py", "/project/module.py", "PYMODULE"),
+    )
+
+    assert list(binary_entries(toc)) == [
+        ("libexample.so", "/usr/lib/libexample.so", "BINARY"),
+        ("module.so", "/venv/module.so", "EXTENSION"),
+    ]
