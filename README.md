@@ -1,5 +1,10 @@
 # Cortex Whisper
 
+[![Build](https://github.com/matheusz-nied/cortex-whisper/actions/workflows/build.yml/badge.svg)](https://github.com/matheusz-nied/cortex-whisper/actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-22d3ee)](LICENSE)
+[![Version](https://img.shields.io/badge/version-0.1.0%20beta-ff2e7e)](https://github.com/matheusz-nied/cortex-whisper/releases)
+[![Platform](https://img.shields.io/badge/platform-Linux-7c5cff)](#platform-status)
+
 Private, local AI voice dictation powered by `faster-whisper`.
 
 Hold **F8**, speak, and release. Cortex Whisper records your voice, transcribes
@@ -50,11 +55,48 @@ Hold F8 → record audio → release F8 → transcribe locally → copy → past
 ```
 
 Models are not bundled. The selected model is downloaded to the user's Hugging
-Face cache on first use and reused afterward.
+Face cache on first use and reused afterward. Expect a wait on the very first
+run while the model downloads.
 
-## Linux requirements
+## Install
 
-Ubuntu and Debian-based systems:
+Download a Linux x86_64 build from the
+[releases page](https://github.com/matheusz-nied/cortex-whisper/releases).
+
+**Debian / Ubuntu (`.deb`)**
+
+```bash
+sudo apt install ./cortex-whisper_0.1.0_amd64.deb
+cortex-whisper
+```
+
+The package declares its own dependencies, so `apt` pulls in what it needs.
+`ydotool` and `wl-clipboard` are listed as recommended packages because
+automatic paste depends on them; keep the default `apt` behaviour that installs
+recommendations, or add them manually.
+
+**Any distribution (AppImage)**
+
+```bash
+chmod +x Cortex-Whisper-0.1.0-x86_64.AppImage
+./Cortex-Whisper-0.1.0-x86_64.AppImage
+```
+
+The AppImage does not install system dependencies. Install the runtime packages
+listed under [Linux requirements](#linux-requirements) before running it.
+
+Verify your download against the `SHA256SUMS` file published with the release:
+
+```bash
+sha256sum -c SHA256SUMS --ignore-missing
+```
+
+Prefer to build it yourself? See [Build packages](#build-packages).
+
+### Linux requirements
+
+Required when running from source or from the AppImage. On Ubuntu and
+Debian-based systems:
 
 ```bash
 sudo apt install libportaudio2 wl-clipboard ydotool python3-dbus python3-gi
@@ -64,38 +106,19 @@ systemctl --user enable --now ydotool.service
 GNOME/Wayland requests permission for the global shortcut on first launch.
 `wl-copy` provides the clipboard and `ydotool` sends Ctrl+V to the focused app.
 
-## Run from source
-
-Python 3.10 or newer is required.
+### Uninstall
 
 ```bash
-git clone https://github.com/matheusz-nied/cortex-whisper.git
-cd cortex-whisper
-python3 -m venv venv
-source venv/bin/activate
-python -m pip install -r requirements.txt
-python cortex_whisper.py
+sudo apt remove cortex-whisper          # .deb install
+rm Cortex-Whisper-0.1.0-x86_64.AppImage # AppImage
 ```
 
-The former `python ditado.py` entry point remains as a temporary compatibility alias.
-
-## Build and install on Linux
+Configuration, logs, and downloaded models are left in place. Remove them with:
 
 ```bash
-source venv/bin/activate
-python -m pip install -r requirements-dev.txt
-PYTHON_BIN=venv/bin/python scripts/build_linux.sh
-sudo apt install ./dist/cortex-whisper_0.1.0_amd64.deb
+rm -rf ~/.config/CortexWhisper ~/.local/state/CortexWhisper
+rm -rf ~/.cache/huggingface/hub/models--Systran--faster-whisper-*
 ```
-
-Launch it from the application menu or run:
-
-```bash
-cortex-whisper
-```
-
-When `appimagetool` is installed, the same script creates
-`dist/Cortex-Whisper-0.1.0-x86_64.AppImage`.
 
 ## Usage
 
@@ -114,15 +137,38 @@ startup, and a live microphone test.
 ## Command line
 
 ```bash
-python cortex_whisper.py --help
-python cortex_whisper.py --version
-python cortex_whisper.py --list-microphones
-python cortex_whisper.py --diagnostics
-python cortex_whisper.py --no-gui --model medium
-python cortex_whisper.py --microphone "ME6S"
+cortex-whisper --help
+cortex-whisper --version
+cortex-whisper --list-microphones
+cortex-whisper --diagnostics
+cortex-whisper --no-gui --model medium
+cortex-whisper --microphone "ME6S"
 ```
 
+From a source checkout, replace `cortex-whisper` with `python cortex_whisper.py`.
+
 Terminal mode uses Enter to start and stop recording and `q` to quit.
+
+## Troubleshooting
+
+Start with the built-in environment report. It prints JSON covering the app
+version, session type, selected model and hotkey, the detected paste backend,
+and how many microphones were found:
+
+```bash
+cortex-whisper --diagnostics
+```
+
+| Symptom | Check |
+| --- | --- |
+| Text is copied but never pasted | `systemctl --user status ydotool.service`. Automatic paste on Wayland needs this service running. The text is still on the clipboard, so Ctrl+V works meanwhile. |
+| F8 does nothing | GNOME asks for global-shortcut permission on first launch. If it was denied, reset it under Settings → Applications → Cortex Whisper. Also confirm no other app owns F8. |
+| No audio captured | `cortex-whisper --list-microphones`, then select the right input in Settings and use the built-in three-second test. |
+| First run hangs on startup | The Whisper model is downloading to the Hugging Face cache. Subsequent runs are offline and fast. |
+| AppImage will not start | Some distributions no longer ship FUSE 2. Run it with `./Cortex-Whisper-0.1.0-x86_64.AppImage --appimage-extract-and-run`. |
+
+Logs are written to `~/.local/state/CortexWhisper/log/` and record operational
+events only, never transcribed text.
 
 ## Data and privacy
 
@@ -141,6 +187,36 @@ Terminal mode uses Enter to start and stop recording and `q` to quit.
 Existing `WhisperDitado` configuration and logs are copied automatically on the
 first Cortex Whisper launch. The originals are retained as a recovery backup.
 
+## Run from source
+
+Python 3.10 or newer is required.
+
+```bash
+git clone https://github.com/matheusz-nied/cortex-whisper.git
+cd cortex-whisper
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install -r requirements.txt
+python cortex_whisper.py
+```
+
+The former `python ditado.py` entry point remains as a temporary compatibility alias.
+
+## Build packages
+
+```bash
+source venv/bin/activate
+python -m pip install -r requirements-dev.txt
+PYTHON_BIN=venv/bin/python scripts/build_linux.sh
+sudo apt install ./dist/cortex-whisper_0.1.0_amd64.deb
+```
+
+The script always produces the `.deb`. When `appimagetool` is also installed it
+creates `dist/Cortex-Whisper-0.1.0-x86_64.AppImage`, and it writes a
+`dist/SHA256SUMS` covering both artifacts.
+
+On Windows, install Inno Setup and run `scripts\build_windows.ps1` from PowerShell.
+
 ## Development
 
 ```bash
@@ -150,9 +226,19 @@ python -m pytest
 python -m compileall -q cortex_whisper.py cortex_shortcut_portal.py src
 ```
 
-Build Linux packages with `PYTHON_BIN=venv/bin/python scripts/build_linux.sh`.
-On Windows, install Inno Setup and run `scripts\build_windows.ps1` from PowerShell.
-Tagged releases and manual runs are configured in GitHub Actions.
+Source layout:
+
+| Path | Contents |
+| --- | --- |
+| `src/cortex_whisper/` | Application package: audio capture, transcription, hotkeys, desktop integration |
+| `src/cortex_whisper/ui/` | Qt overlay and settings window |
+| `packaging/` | PyInstaller spec, Debian metadata, Inno Setup script |
+| `scripts/` | Linux and Windows build scripts |
+| `docs/` | Landing page published with GitHub Pages |
+
+The `build` workflow runs on `v*` tags and on manual dispatch. It builds the
+Linux and Windows artifacts and attaches them to the workflow run; publishing a
+GitHub Release is still a manual step.
 
 ## Known limitations
 
@@ -169,6 +255,7 @@ See the [release checklist](RELEASE_CHECKLIST.md) for the full launch roadmap.
 
 Bug reports and focused pull requests are welcome. Include the operating system,
 desktop session, microphone, logs, and reproduction steps for integration issues.
+Run `ruff` and `pytest` before opening a pull request.
 
 ## License
 

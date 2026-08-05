@@ -43,17 +43,31 @@ if command -v appimagetool >/dev/null 2>&1; then
   APPDIR="$PROJECT_DIR/build/CortexWhisper.AppDir"
   rm -rf "$APPDIR"
   install -d "$APPDIR/usr/bin" "$APPDIR/usr/share/doc/cortex-whisper" \
+    "$APPDIR/usr/share/applications" \
+    "$APPDIR/usr/share/icons/hicolor/scalable/apps" \
     "$APPDIR/usr/share/metainfo"
   cp -a dist/cortex-whisper/. "$APPDIR/usr/bin/"
   cp -a build/legal/. "$APPDIR/usr/share/doc/cortex-whisper/"
   cp packaging/linux/AppRun "$APPDIR/AppRun"
   chmod +x "$APPDIR/AppRun"
   cp io.github.matheusz_nied.CortexWhisper.desktop "$APPDIR/"
+  cp io.github.matheusz_nied.CortexWhisper.desktop "$APPDIR/usr/share/applications/"
   sed "s/@VERSION@/$VERSION/g" \
     packaging/linux/io.github.matheusz_nied.CortexWhisper.metainfo.xml.in \
-    > "$APPDIR/usr/share/metainfo/io.github.matheusz_nied.CortexWhisper.metainfo.xml"
+    > "$APPDIR/usr/share/metainfo/io.github.matheusz_nied.CortexWhisper.appdata.xml"
   cp assets/cortex-whisper.svg "$APPDIR/cortex-whisper.svg"
-  ARCH=x86_64 appimagetool "$APPDIR" "$PROJECT_DIR/dist/Cortex-Whisper-${VERSION}-x86_64.AppImage"
+  cp assets/cortex-whisper.svg \
+    "$APPDIR/usr/share/icons/hicolor/scalable/apps/cortex-whisper.svg"
+  # Validate the same metadata explicitly in CI with appstreamcli --no-net.
+  # appimagetool's built-in check requires network access for homepage URLs.
+  APPIMAGETOOL_ARGS=(--no-appstream)
+  if [[ -n "${APPIMAGE_RUNTIME_FILE:-}" ]]; then
+    APPIMAGETOOL_ARGS+=(--runtime-file "$APPIMAGE_RUNTIME_FILE")
+  fi
+  APPIMAGE_PATH="$PROJECT_DIR/dist/Cortex-Whisper-${VERSION}-x86_64.AppImage"
+  rm -f "$APPIMAGE_PATH"
+  ARCH=x86_64 appimagetool "${APPIMAGETOOL_ARGS[@]}" \
+    "$APPDIR" "$APPIMAGE_PATH"
 else
   echo "appimagetool was not found; the .deb was built and the AppImage was skipped."
 fi
