@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cortex Whisper — Ditado por voz local e privado</title>
+<meta name="description" content="Segure F8, fale, solte. Cortex Whisper transcreve sua voz localmente e cola o texto no app em foco. Sem nuvem, sem telemetria.">
+<link rel="icon" href="assets/cortex-whisper.svg" type="image/svg+xml">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Cortex Whisper — Ditado por voz local e privado">
+<meta property="og:description" content="Ditado por voz com IA rodando 100% na sua máquina. Beta para Linux.">
+<meta property="og:image" content="https://matheusz-nied.github.io/cortex-whisper/assets/overlay-recording.png">
+<meta name="twitter:card" content="summary_large_image">
+
+<style>
+  :root{
+    --bg:#07080e;
+    --bg-soft:#0c0e18;
+    --panel:rgba(15,18,32,.72);
+    --panel-solid:#10131f;
+    --line:#222842;
+    --line-bright:#333b61;
+    --text:#e9ecf8;
+    --muted:#98a1c0;
+    --pink:#ff2e7e;
+    --cyan:#22d3ee;
+    --violet:#7c5cff;
+    --mono:ui-monospace,SFMono-Regular,"JetBrains Mono","Cascadia Code",Menlo,Consolas,monospace;
+    --radius:14px;
+    --maxw:1080px;
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font:16px/1.65 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Inter,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  /* ambient neon fog */
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:-2;
+    background:
+      radial-gradient(58rem 30rem at 10% -6%, rgba(255,46,126,.13), transparent 62%),
+      radial-gradient(52rem 28rem at 92% 2%, rgba(34,211,238,.11), transparent 60%),
+      radial-gradient(60rem 34rem at 50% 108%, rgba(124,92,255,.12), transparent 62%);
+  }
+  /* faint CRT scanlines — texture, not noise */
+  body::after{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:-1;
+    pointer-events:none;
+    background:repeating-linear-gradient(0deg,
+      transparent 0 3px, rgba(255,255,255,.012) 3px 4px);
+  }
+
+  ::selection{background:var(--pink);color:#fff}
+  ::-webkit-scrollbar{width:10px}
+  ::-webkit-scrollbar-track{background:var(--bg)}
+  ::-webkit-scrollbar-thumb{background:var(--line-bright);border-radius:5px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--violet)}
+
+  a{color:var(--cyan);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code,kbd,pre{font-family:var(--mono)}
+
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  main{counter-reset:sec}
+  section{padding:84px 0;border-top:1px solid var(--line);position:relative}
+  section:first-of-type{border-top:0}
+  /* neon seam where sections meet */
+  section + section::before{
+    content:"";
+    position:absolute;top:-1px;left:50%;transform:translateX(-50%);
+    width:min(420px,70%);height:1px;
+    background:linear-gradient(90deg,transparent,rgba(124,92,255,.55),rgba(34,211,238,.45),transparent);
+  }
+
+  h1,h2,h3{line-height:1.2;margin:0 0 .5em;letter-spacing:-.02em}
+  h2{font-size:clamp(1.5rem,3.2vw,2.15rem)}
+  h3{font-size:1.05rem}
+  p{margin:0 0 1em}
+  .lede{color:var(--muted);font-size:1.05rem;max-width:62ch}
+
+  /* numbered terminal-style eyebrows: 01 // SECTION */
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--cyan);font-weight:700;margin-bottom:1em;
+    display:flex;align-items:center;gap:10px;
+  }
+  section .eyebrow::before{
+    counter-increment:sec;
+    content:"0" counter(sec) " //";
+    color:var(--pink);
+    letter-spacing:.08em;
+  }
+  .eyebrow::after{
+    content:"";flex:0 1 90px;height:1px;
+    background:linear-gradient(90deg,var(--line-bright),transparent);
+  }
+
+  /* ---------- header ---------- */
+  header{
+    position:sticky;top:0;z-index:50;
+    backdrop-filter:blur(14px);
+    background:rgba(7,8,14,.78);
+    border-bottom:1px solid var(--line);
+  }
+  header::after{
+    content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;
+    background:linear-gradient(90deg,transparent 5%,rgba(255,46,126,.5) 35%,rgba(34,211,238,.5) 65%,transparent 95%);
+    opacity:.55;
+  }
+  .nav{display:flex;align-items:center;gap:16px;height:62px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--text)}
+  .brand:hover{text-decoration:none}
+  .brand img{width:28px;height:28px;border-radius:8px;filter:drop-shadow(0 0 8px rgba(124,92,255,.55))}
+  .nav-links{display:flex;gap:22px;margin-left:auto;font-size:.92rem}
+  .nav-links a{color:var(--muted);position:relative}
+  .nav-links a:hover{color:var(--text);text-decoration:none}
+  .nav-links a::after{
+    content:"";position:absolute;left:0;right:100%;bottom:-4px;height:1px;
+    background:linear-gradient(90deg,var(--pink),var(--cyan));
+    transition:right .25s ease;
+  }
+  .nav-links a:hover::after{right:0}
+
+  .lang{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-family:var(--mono)}
+  .lang button{
+    background:none;border:0;color:var(--muted);cursor:pointer;
+    font:600 .76rem/1 var(--mono);padding:8px 12px;letter-spacing:.06em;
+  }
+  .lang button + button{border-left:1px solid var(--line)}
+  .lang button[aria-pressed="true"]{
+    background:linear-gradient(135deg,rgba(255,46,126,.2),rgba(124,92,255,.25));
+    color:#fff;text-shadow:0 0 10px rgba(255,46,126,.6);
+  }
+
+  /* ---------- hero ---------- */
+  .hero{padding:88px 0 72px;overflow:hidden}
+  /* perspective grid floor fading up from the bottom of the hero */
+  .hero::after{
+    content:"";position:absolute;left:-10%;right:-10%;bottom:0;height:280px;
+    background:
+      linear-gradient(90deg,rgba(124,92,255,.14) 1px,transparent 1px) 0 0/56px 100%,
+      linear-gradient(0deg,rgba(124,92,255,.14) 1px,transparent 1px) 0 0/100% 34px;
+    transform:perspective(420px) rotateX(58deg);
+    transform-origin:bottom center;
+    -webkit-mask-image:linear-gradient(to top,rgba(0,0,0,.5),transparent 85%);
+    mask-image:linear-gradient(to top,rgba(0,0,0,.5),transparent 85%);
+    pointer-events:none;
+  }
+  .hero .wrap{position:relative;z-index:1}
+
+  .hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center}
+
+  .hero h1{font-size:clamp(2.1rem,5.2vw,3.3rem)}
+  .grad{
+    background:linear-gradient(96deg,var(--pink),var(--violet) 48%,var(--cyan));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 26px rgba(255,46,126,.28));
+  }
+  .badge{
+    display:inline-flex;align-items:center;gap:9px;
+    border:1px solid var(--line);background:var(--bg-soft);
+    border-radius:6px;padding:6px 14px;
+    font:600 .74rem/1.4 var(--mono);letter-spacing:.06em;color:var(--muted);
+    margin-bottom:24px;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--pink);box-shadow:0 0 10px var(--pink);animation:blink 1.6s ease-in-out infinite}
+
+  .cta{display:flex;flex-wrap:wrap;gap:12px;margin:30px 0 14px}
+  .btn{
+    position:relative;display:inline-flex;align-items:center;gap:10px;
+    padding:13px 22px;border-radius:10px;font-weight:650;font-size:.95rem;
+    border:1px solid var(--line-bright);color:var(--text);background:var(--bg-soft);
+    transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+    overflow:hidden;
+  }
+  .btn:hover{
+    text-decoration:none;transform:translateY(-2px);
+    border-color:var(--cyan);
+    box-shadow:0 0 0 1px rgba(34,211,238,.35),0 10px 30px -12px rgba(34,211,238,.4);
+  }
+  .btn-primary{
+    background:linear-gradient(96deg,var(--pink),var(--violet));
+    border-color:transparent;color:#fff;
+    box-shadow:0 8px 30px -10px rgba(255,46,126,.55);
+  }
+  .btn-primary:hover{
+    border-color:transparent;
+    box-shadow:0 0 0 1px rgba(255,46,126,.5),0 14px 38px -10px rgba(255,46,126,.65);
+  }
+  /* light sweep across the primary button */
+  .btn-primary::after{
+    content:"";position:absolute;top:0;bottom:0;left:-70%;width:45%;
+    background:linear-gradient(105deg,transparent,rgba(255,255,255,.35),transparent);
+    transform:skewX(-18deg);
+    animation:sweep 4.5s ease-in-out infinite;
+  }
+  .btn small{display:block;font-weight:400;font-size:.74rem;opacity:.82}
+  .btn-note{font-size:.82rem;color:var(--muted)}
+
+  /* ---------- hero visual: live overlay mock + F8 keycap ---------- */
+  .hero-visual{
+    display:flex;flex-direction:column;align-items:center;gap:34px;
+    padding:20px 0;
+  }
+  .mock{
+    display:flex;align-items:center;gap:18px;
+    background:#120510;
+    border:2px solid rgba(255,46,126,.75);
+    border-radius:18px;
+    padding:16px 24px;
+    box-shadow:
+      0 0 0 1px rgba(255,46,126,.2),
+      0 0 34px -6px rgba(255,46,126,.55),
+      inset 0 0 24px rgba(255,46,126,.08);
+    font-family:var(--mono);
+    animation:float 6s ease-in-out infinite;
+  }
+  .mock-rec{
+    display:flex;align-items:center;gap:8px;
+    color:#ffd7e7;font-weight:700;font-size:.85rem;letter-spacing:.12em;
+  }
+  .mock-rec i{
+    width:10px;height:10px;border-radius:50%;
+    background:var(--pink);box-shadow:0 0 12px var(--pink);
+    animation:blink 1.2s ease-in-out infinite;
+  }
+  .mock-bars{display:flex;align-items:center;gap:4px;height:34px}
+  .mock-bars i{
+    width:5px;height:100%;border-radius:3px;
+    transform-origin:center;
+    animation:eq 1.1s ease-in-out infinite;
+  }
+  .mock-bars i:nth-child(odd){background:var(--pink);box-shadow:0 0 8px rgba(255,46,126,.7)}
+  .mock-bars i:nth-child(even){background:var(--cyan);box-shadow:0 0 8px rgba(34,211,238,.7)}
+  .mock-bars i:nth-child(1){animation-delay:0s;animation-duration:.9s}
+  .mock-bars i:nth-child(2){animation-delay:.15s}
+  .mock-bars i:nth-child(3){animation-delay:.3s;animation-duration:1.3s}
+  .mock-bars i:nth-child(4){animation-delay:.05s}
+  .mock-bars i:nth-child(5){animation-delay:.45s;animation-duration:.8s}
+  .mock-bars i:nth-child(6){animation-delay:.2s}
+  .mock-bars i:nth-child(7){animation-delay:.6s;animation-duration:1.2s}
+  .mock-bars i:nth-child(8){animation-delay:.35s}
+  .mock-bars i:nth-child(9){animation-delay:.1s;animation-duration:.95s}
+  .mock-bars i:nth-child(10){animation-delay:.5s}
+  .mock-time{
+    color:#dff9ff;font-size:.95rem;font-weight:600;letter-spacing:.08em;
+    text-shadow:0 0 10px rgba(34,211,238,.6);
+    min-width:3.2em;text-align:right;
+    font-variant-numeric:tabular-nums;
+  }
+
+  .keycap-wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .keycap{
+    width:86px;height:86px;border-radius:16px;
+    display:grid;place-items:center;
+    background:linear-gradient(180deg,#1c2032,#121525);
+    border:1px solid var(--line-bright);
+    border-bottom:5px solid #0a0c14;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.08),
+      0 10px 28px -8px rgba(0,0,0,.8),
+      0 0 26px -4px rgba(34,211,238,.28);
+    font:700 1.6rem/1 var(--mono);
+    color:var(--cyan);
+    text-shadow:0 0 14px rgba(34,211,238,.8);
+    animation:press 3.4s ease-in-out infinite;
+  }
+  .keycap-hint{
+    font:600 .68rem/1 var(--mono);letter-spacing:.28em;color:var(--muted);
+    text-transform:uppercase;
+  }
+
+  @keyframes eq{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+  @keyframes press{
+    0%,86%,100%{transform:translateY(0);border-bottom-width:5px}
+    90%,94%{transform:translateY(3px);border-bottom-width:2px}
+  }
+  @keyframes sweep{
+    0%,60%{left:-70%}
+    100%{left:130%}
+  }
+
+  /* ---------- terminal window (flow) ---------- */
+  .term{
+    background:var(--panel-solid);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 18px 44px -22px rgba(0,0,0,.85);
+  }
+  .term-bar{
+    display:flex;align-items:center;gap:7px;
+    padding:11px 16px;
+    background:rgba(255,255,255,.03);
+    border-bottom:1px solid var(--line);
+    font:500 .74rem/1 var(--mono);color:var(--muted);letter-spacing:.05em;
+  }
+  .term-bar i{width:11px;height:11px;border-radius:50%;display:inline-block}
+  .term-bar i:nth-child(1){background:#ff5f57}
+  .term-bar i:nth-child(2){background:#febc2e}
+  .term-bar i:nth-child(3){background:#28c840}
+  .term-bar span{margin-left:8px}
+  .term-body{padding:20px 22px}
+
+  .flow{
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+    font-family:var(--mono);font-size:.86rem;
+  }
+  .flow::before{content:"$";color:var(--pink);font-weight:700;margin-right:2px}
+  .flow span{color:var(--muted)}
+  .flow b{
+    color:var(--text);font-weight:600;
+    background:rgba(34,211,238,.08);
+    border:1px solid rgba(34,211,238,.28);
+    border-radius:6px;padding:3px 10px;
+  }
+  .flow .arrow{color:var(--violet);text-shadow:0 0 8px rgba(124,92,255,.7)}
+
+  kbd{
+    background:var(--bg);border:1px solid var(--line-bright);border-bottom-width:2px;
+    border-radius:6px;padding:2px 7px;font-size:.85em;color:var(--cyan);
+  }
+
+  /* ---------- cards: glass + gradient border + corner brackets ---------- */
+  .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(258px,1fr))}
+  .card{
+    position:relative;
+    background:
+      linear-gradient(var(--panel),var(--panel)) padding-box,
+      linear-gradient(150deg,var(--line-bright),var(--line) 45%,var(--line)) border-box;
+    border:1px solid transparent;
+    border-radius:var(--radius);
+    padding:22px;
+    backdrop-filter:blur(6px);
+    transition:transform .2s ease,box-shadow .2s ease;
+  }
+  /* corner brackets, revealed on hover */
+  .card::before,.card::after{
+    content:"";position:absolute;width:16px;height:16px;
+    border:2px solid transparent;
+    transition:border-color .25s ease;
+    pointer-events:none;
+  }
+  .card::before{top:-2px;left:-2px;border-right:0;border-bottom:0;border-radius:var(--radius) 0 0 0}
+  .card::after{bottom:-2px;right:-2px;border-left:0;border-top:0;border-radius:0 0 var(--radius) 0}
+  .card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 16px 40px -18px rgba(124,92,255,.35);
+  }
+  .card:hover::before{border-color:var(--pink)}
+  .card:hover::after{border-color:var(--cyan)}
+  .card p{color:var(--muted);font-size:.92rem;margin:0}
+  .card .ico{
+    width:38px;height:38px;border-radius:10px;display:grid;place-items:center;
+    background:
+      linear-gradient(var(--bg-soft),var(--bg-soft)) padding-box,
+      linear-gradient(135deg,var(--pink),var(--violet),var(--cyan)) border-box;
+    border:1px solid transparent;
+    margin-bottom:14px;font-size:1.05rem;
+  }
+
+  .steps{counter-reset:s}
+  .steps .card::before{
+    /* replace top-left bracket with the step number */
+    counter-increment:s;content:"0" counter(s);
+    position:static;width:auto;height:auto;border:0;border-radius:0;
+    display:inline-block;
+    font:700 .8rem/1 var(--mono);letter-spacing:.1em;
+    background:linear-gradient(96deg,var(--pink),var(--cyan));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    margin-bottom:14px;
+    pointer-events:auto;
+  }
+  .steps .card{padding-top:18px}
+
+  /* ---------- code ---------- */
+  pre{
+    background:#0b0d16;border:1px solid var(--line);border-radius:11px;
+    padding:16px 18px;overflow-x:auto;font-size:.85rem;line-height:1.7;margin:0 0 16px;
+    position:relative;
+  }
+  pre::before{
+    content:"";position:absolute;top:0;left:0;bottom:0;width:3px;
+    background:linear-gradient(180deg,var(--pink),var(--violet));
+    border-radius:3px 0 0 3px;opacity:.7;
+  }
+  pre code{color:#c8cfee}
+  .cmt{color:#5d6685}
+
+  /* ---------- table ---------- */
+  .tablewrap{
+    overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);
+    background:var(--panel);backdrop-filter:blur(6px);
+  }
+  table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:520px}
+  th,td{padding:13px 18px;text-align:left;border-bottom:1px solid var(--line)}
+  th{
+    background:rgba(255,255,255,.025);
+    font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted);
+  }
+  tr:last-child td{border-bottom:0}
+  tbody tr{transition:background .15s ease}
+  tbody tr:hover{background:rgba(124,92,255,.05)}
+  .pill{
+    display:inline-block;padding:3px 11px;border-radius:6px;
+    font:600 .74rem/1.5 var(--mono);letter-spacing:.04em;
+  }
+  .pill.ok{background:rgba(34,211,238,.12);color:var(--cyan);border:1px solid rgba(34,211,238,.3)}
+  .pill.warn{background:rgba(255,46,126,.12);color:var(--pink);border:1px solid rgba(255,46,126,.3)}
+  .pill.off{background:rgba(152,161,192,.1);color:var(--muted);border:1px solid var(--line)}
+
+  /* ---------- misc ---------- */
+  .callout{
+    position:relative;
+    background:var(--panel);backdrop-filter:blur(6px);
+    border:1px solid rgba(255,46,126,.3);
+    border-radius:var(--radius);padding:18px 22px 18px 26px;margin-bottom:26px;
+  }
+  .callout::before{
+    content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;
+    background:var(--pink);border-radius:3px;
+    box-shadow:0 0 12px rgba(255,46,126,.7);
+  }
+  .callout p{margin:0;color:var(--muted);font-size:.92rem}
+
+  details{
+    border:1px solid var(--line);border-radius:11px;
+    background:var(--panel);backdrop-filter:blur(6px);
+    margin-bottom:10px;transition:border-color .2s ease;
+  }
+  details:hover{border-color:var(--line-bright)}
+  details[open]{border-color:rgba(124,92,255,.45)}
+  summary{padding:15px 20px;cursor:pointer;font-weight:600;font-size:.95rem;list-style:none;display:flex;align-items:center;gap:12px}
+  summary::-webkit-details-marker{display:none}
+  summary::before{
+    content:">";font-family:var(--mono);font-weight:700;color:var(--violet);
+    transition:transform .2s ease;
+  }
+  details[open] summary::before{transform:rotate(90deg);color:var(--cyan)}
+  details .body{padding:0 20px 17px 46px;color:var(--muted);font-size:.92rem}
+  details .body p:last-child{margin:0}
+
+  .shots{display:flex;flex-wrap:wrap;gap:14px;margin:34px 0}
+  .shots figure{margin:0;flex:1 1 200px;min-width:180px}
+  .shots img{
+    width:100%;height:auto;display:block;border-radius:10px;
+    border:1px solid var(--line);
+    transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
+  }
+  .shots figure:hover img{
+    transform:translateY(-3px);
+    border-color:rgba(255,46,126,.5);
+    box-shadow:0 12px 30px -14px rgba(255,46,126,.45);
+  }
+  .shots figcaption{
+    font:500 .74rem/1.6 var(--mono);letter-spacing:.08em;text-transform:uppercase;
+    color:var(--muted);margin-top:9px;text-align:center;
+  }
+  .shots figcaption::before{content:"[ ";color:var(--violet)}
+  .shots figcaption::after{content:" ]";color:var(--violet)}
+
+  /* download buttons get monospace filenames */
+  #download .btn > span > span:first-child{font-family:var(--mono);font-size:.88rem}
+
+  footer{border-top:1px solid var(--line);padding:38px 0;color:var(--muted);font-size:.87rem;position:relative}
+  footer::before{
+    content:"";position:absolute;top:-1px;left:50%;transform:translateX(-50%);
+    width:min(420px,70%);height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,46,126,.5),rgba(34,211,238,.4),transparent);
+  }
+  .foot{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+  .foot nav{display:flex;gap:18px;flex-wrap:wrap}
+
+  /* scroll-reveal (activated only by JS + motion allowed) */
+  .js .reveal{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+  .js .reveal.in{opacity:1;transform:none}
+
+  @media (max-width:880px){
+    .hero-grid{grid-template-columns:1fr;gap:40px}
+    .hero-visual{flex-direction:row;justify-content:center;flex-wrap:wrap;gap:26px}
+  }
+  @media (max-width:640px){
+    .nav-links{display:none}
+    section{padding:58px 0}
+    .hero{padding:58px 0 46px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none!important;transition:none!important}
+    html{scroll-behavior:auto}
+    .js .reveal{opacity:1;transform:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#top">
+      <img src="assets/cortex-whisper.svg" alt="">
+      Cortex Whisper
+    </a>
+    <nav class="nav-links">
+      <a href="#how" data-i18n="nav.how">Como funciona</a>
+      <a href="#features" data-i18n="nav.features">Recursos</a>
+      <a href="#privacy" data-i18n="nav.privacy">Privacidade</a>
+      <a href="#install" data-i18n="nav.install">Instalação</a>
+      <a href="#download" data-i18n="nav.download">Download</a>
+    </nav>
+    <div class="lang" role="group" aria-label="Language / Idioma">
+      <button type="button" data-lang="pt" aria-pressed="true">PT</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-grid">
+        <div>
+          <div class="badge"><span class="dot"></span><span data-i18n="hero.badge">v0.1.0 BETA — LINUX</span></div>
+          <h1>
+            <span data-i18n="hero.title1">Segure F8, fale, solte.</span><br>
+            <span class="grad" data-i18n="hero.title2">O texto aparece onde você está.</span>
+          </h1>
+          <p class="lede" data-i18n="hero.lede">
+            Ditado por voz com IA que roda inteiramente na sua máquina. O Cortex Whisper grava,
+            transcreve localmente com <code>faster-whisper</code> e cola o resultado no aplicativo que
+            já está em foco. Nenhum áudio sai do seu computador.
+          </p>
+
+          <div class="cta">
+            <a class="btn btn-primary" id="dl-deb" href="#download">
+              <span>
+                <span data-i18n="hero.deb">Baixar .deb</span>
+                <small data-i18n="hero.debSub">Ubuntu / Debian · x86_64</small>
+              </span>
+            </a>
+            <a class="btn" id="dl-appimage" href="#download">
+              <span>
+                <span data-i18n="hero.appimage">Baixar AppImage</span>
+                <small data-i18n="hero.appimageSub">Qualquer distro · x86_64</small>
+              </span>
+            </a>
+            <a class="btn" id="repo-link" href="https://github.com/matheusz-nied/cortex-whisper">
+              <span data-i18n="hero.source">Código-fonte</span>
+            </a>
+          </div>
+          <p class="btn-note" data-i18n="hero.note">
+            Gratuito e open source sob licença MIT. Sem conta, sem assinatura, sem telemetria.
+          </p>
+        </div>
+
+        <!-- live recreation of the app's recording overlay -->
+        <div class="hero-visual" aria-hidden="true">
+          <div class="keycap-wrap">
+            <div class="keycap">F8</div>
+            <div class="keycap-hint">hold</div>
+          </div>
+          <div class="mock">
+            <div class="mock-rec"><i></i>REC</div>
+            <div class="mock-bars">
+              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            </div>
+            <div class="mock-time" id="mock-time">00:07</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW -->
+  <section id="how">
+    <div class="wrap">
+      <p class="eyebrow" data-i18n="how.eyebrow">Como funciona</p>
+      <h2 data-i18n="how.title">Quatro segundos entre a fala e o texto</h2>
+      <p class="lede" style="margin-bottom:30px" data-i18n="how.lede">
+        Sem janela pra abrir, sem botão pra clicar. O overlay compacto aparece centralizado
+        na tela ativa e some sozinho.
+      </p>
+
+      <div class="term reveal" style="margin-bottom:30px">
+        <div class="term-bar"><i></i><i></i><i></i><span>cortex-whisper — hold-to-talk</span></div>
+        <div class="term-body">
+          <div class="flow">
+            <b data-i18n="how.f1">Segure F8</b><span class="arrow">→</span>
+            <span data-i18n="how.f2">grava o áudio</span><span class="arrow">→</span>
+            <b data-i18n="how.f3">solte F8</b><span class="arrow">→</span>
+            <span data-i18n="how.f4">transcreve localmente</span><span class="arrow">→</span>
+            <span data-i18n="how.f5">copia</span><span class="arrow">→</span>
+            <b data-i18n="how.f6">cola no app em foco</b>
+          </div>
+        </div>
+      </div>
+
+      <div class="shots">
+        <figure class="reveal">
+          <img src="assets/overlay-recording.png" alt="" width="248" height="76">
+          <figcaption data-i18n="hero.shot1">Gravando</figcaption>
+        </figure>
+        <figure class="reveal">
+          <img src="assets/overlay-decoding.png" alt="" width="248" height="76">
+          <figcaption data-i18n="hero.shot2">Transcrevendo</figcaption>
+        </figure>
+        <figure class="reveal">
+          <img src="assets/overlay-success.png" alt="" width="248" height="76">
+          <figcaption data-i18n="hero.shot3">Colado</figcaption>
+        </figure>
+      </div>
+
+      <div class="grid steps">
+        <div class="card reveal">
+          <h3 data-i18n="how.s1t">Coloque o cursor onde quiser</h3>
+          <p data-i18n="how.s1d">Chat, editor de código, campo de e-mail, terminal. O Cortex Whisper não rouba o foco da janela ativa.</p>
+        </div>
+        <div class="card reveal">
+          <h3 data-i18n="how.s2t">Segure a tecla e fale</h3>
+          <p data-i18n="how.s2d">F8 por padrão, configurável entre F6 e F12. Um atalho global, funciona de qualquer aplicativo.</p>
+        </div>
+        <div class="card reveal">
+          <h3 data-i18n="how.s3t">Solte e receba o texto</h3>
+          <p data-i18n="how.s3d">O modelo Whisper roda na sua CPU (ou GPU CUDA, se disponível) e o texto é colado automaticamente.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <div class="wrap">
+      <p class="eyebrow" data-i18n="feat.eyebrow">Recursos</p>
+      <h2 data-i18n="feat.title">O que vem na caixa</h2>
+      <div class="grid" style="margin-top:30px">
+        <div class="card reveal"><div class="ico">🎙️</div><h3 data-i18n="feat.1t">Atalho global hold-to-talk</h3><p data-i18n="feat.1d">Segure para gravar, solte para transcrever. Tecla configurável de F6 a F12.</p></div>
+        <div class="card reveal"><div class="ico">🔒</div><h3 data-i18n="feat.2t">100% local</h3><p data-i18n="feat.2d">O áudio é processado em memória pelo faster-whisper e nunca é gravado em disco nem enviado a servidores.</p></div>
+        <div class="card reveal"><div class="ico">🧠</div><h3 data-i18n="feat.3t">Modelos small e medium</h3><p data-i18n="feat.3d">Escolha entre velocidade e precisão. A seleção fica salva entre sessões.</p></div>
+        <div class="card reveal"><div class="ico">⚡</div><h3 data-i18n="feat.4t">CPU com int8, CUDA se houver</h3><p data-i18n="feat.4d">Inferência quantizada em int8 na CPU, com tentativa automática de CUDA quando a GPU está disponível.</p></div>
+        <div class="card reveal"><div class="ico">🎚️</div><h3 data-i18n="feat.5t">Seleção de microfone</h3><p data-i18n="feat.5d">Escolha a entrada de áudio e valide com um teste embutido de três segundos.</p></div>
+        <div class="card reveal"><div class="ico">✨</div><h3 data-i18n="feat.6t">Overlay neon compacto</h3><p data-i18n="feat.6d">Estados de gravação, transcrição, sucesso e erro, sempre centralizados no display ativo.</p></div>
+        <div class="card reveal"><div class="ico">📋</div><h3 data-i18n="feat.7t">Colagem automática</h3><p data-i18n="feat.7d">O texto vai para a área de transferência e é colado no aplicativo em foco via wl-clipboard e ydotool.</p></div>
+        <div class="card reveal"><div class="ico">🛠️</div><h3 data-i18n="feat.8t">Bandeja, pausa e logs</h3><p data-i18n="feat.8d">Controles na bandeja do sistema, modo pausa, logs rotativos e inicialização automática opcional.</p></div>
+        <div class="card reveal"><div class="ico">⌨️</div><h3 data-i18n="feat.9t">Modo GUI e terminal</h3><p data-i18n="feat.9d">Use a interface gráfica ou rode com <code>--no-gui</code> direto do terminal.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRIVACY -->
+  <section id="privacy">
+    <div class="wrap">
+      <p class="eyebrow" data-i18n="priv.eyebrow">Privacidade</p>
+      <h2 data-i18n="priv.title">Sua voz não vai a lugar nenhum</h2>
+      <p class="lede" style="margin-bottom:28px" data-i18n="priv.lede">
+        Não existe servidor de aplicação. Não existe conta. Não existe telemetria.
+        A única conexão de rede possível é o download do modelo Whisper na primeira execução.
+      </p>
+      <div class="grid">
+        <div class="card reveal"><h3 data-i18n="priv.1t">Áudio em memória</h3><p data-i18n="priv.1d">A gravação é processada localmente e descartada. Nada é salvo em disco.</p></div>
+        <div class="card reveal"><h3 data-i18n="priv.2t">Logs sem conteúdo</h3><p data-i18n="priv.2d">Os logs registram eventos operacionais e contagem de caracteres — nunca o texto transcrito.</p></div>
+        <div class="card reveal"><h3 data-i18n="priv.3t">Modelo baixado uma vez</h3><p data-i18n="priv.3d">O Hugging Face é contatado apenas quando um modelo ainda não está no cache local. Depois disso, funciona offline.</p></div>
+      </div>
+
+      <h3 style="margin:36px 0 14px" data-i18n="priv.where">Onde os dados ficam</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr>
+            <th data-i18n="priv.th1">Dado</th><th>Linux</th><th>Windows</th>
+          </tr></thead>
+          <tbody>
+            <tr><td data-i18n="priv.r1">Configuração</td><td><code>~/.config/CortexWhisper/config.json</code></td><td><code>%LOCALAPPDATA%\CortexWhisper\config.json</code></td></tr>
+            <tr><td data-i18n="priv.r2">Logs</td><td><code>~/.local/state/CortexWhisper/log/</code></td><td><code>%LOCALAPPDATA%\CortexWhisper\Logs\</code></td></tr>
+            <tr><td data-i18n="priv.r3">Modelos</td><td colspan="2" data-i18n="priv.r3v">Cache de usuário do Hugging Face</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLATFORMS -->
+  <section id="platforms">
+    <div class="wrap">
+      <p class="eyebrow" data-i18n="plat.eyebrow">Compatibilidade</p>
+      <h2 data-i18n="plat.title">Status por plataforma</h2>
+      <div class="callout">
+        <p data-i18n="plat.callout">
+          A versão 0.1.0 Beta é validada apenas em Linux com GNOME/Wayland. O suporte a Windows é
+          experimental e ainda não foi testado em hardware real. macOS não está implementado.
+        </p>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr>
+            <th data-i18n="plat.th1">Plataforma</th><th data-i18n="plat.th2">Status</th><th data-i18n="plat.th3">Observações</th>
+          </tr></thead>
+          <tbody>
+            <tr><td>Linux / GNOME Wayland</td><td><span class="pill ok" data-i18n="plat.p1">Testado</span></td><td data-i18n="plat.n1">Plataforma principal de desenvolvimento</td></tr>
+            <tr><td>Linux / X11</td><td><span class="pill ok" data-i18n="plat.p2">Implementado</span></td><td data-i18n="plat.n2">Precisa de testes mais amplos</td></tr>
+            <tr><td>Windows 10/11</td><td><span class="pill warn" data-i18n="plat.p3">Experimental</span></td><td data-i18n="plat.n3">Build e instalador existem, mas faltam testes em hardware real</td></tr>
+            <tr><td>macOS</td><td><span class="pill off" data-i18n="plat.p4">Não suportado</span></td><td data-i18n="plat.n4">Integração com a plataforma ainda não foi implementada</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSTALL -->
+  <section id="install">
+    <div class="wrap">
+      <p class="eyebrow" data-i18n="inst.eyebrow">Instalação</p>
+      <h2 data-i18n="inst.title">Colocando pra rodar no Linux</h2>
+
+      <h3 style="margin-top:28px" data-i18n="inst.deps">1. Dependências do sistema</h3>
+      <p class="lede" data-i18n="inst.depsd">
+        Em sistemas baseados em Ubuntu e Debian. O <code>wl-copy</code> cuida da área de transferência
+        e o <code>ydotool</code> envia o Ctrl+V para o aplicativo em foco.
+      </p>
+<pre><code>sudo apt install libportaudio2 wl-clipboard ydotool python3-dbus python3-gi
+systemctl --user enable --now ydotool.service</code></pre>
+
+      <h3 style="margin-top:32px" data-i18n="inst.pkg">2. Instale o pacote</h3>
+<pre data-pkg-deb><code><span class="cmt"># .deb</span>
+sudo apt install ./cortex-whisper_0.1.0_amd64.deb
+cortex-whisper</code></pre>
+<pre data-pkg-appimage><code><span class="cmt"># AppImage</span>
+chmod +x Cortex-Whisper-0.1.0-x86_64.AppImage
+./Cortex-Whisper-0.1.0-x86_64.AppImage</code></pre>
+
+      <p class="btn-note" data-i18n="inst.portal">
+        No GNOME/Wayland, o sistema pede permissão para o atalho global na primeira execução.
+      </p>
+
+      <h3 style="margin-top:32px" data-i18n="inst.src">Rodar a partir do código-fonte</h3>
+      <p class="lede" data-i18n="inst.srcd">Requer Python 3.10 ou mais recente.</p>
+<pre><code>git clone https://github.com/matheusz-nied/cortex-whisper.git
+cd cortex-whisper
+python3 -m venv venv &amp;&amp; source venv/bin/activate
+python -m pip install -r requirements.txt
+python cortex_whisper.py</code></pre>
+
+      <h3 style="margin-top:32px" data-i18n="inst.cli">Linha de comando</h3>
+<pre><code>cortex-whisper --help
+cortex-whisper --list-microphones
+cortex-whisper --diagnostics
+cortex-whisper --no-gui --model medium
+cortex-whisper --microphone "ME6S"</code></pre>
+    </div>
+  </section>
+
+  <!-- DOWNLOAD -->
+  <section id="download">
+    <div class="wrap">
+      <p class="eyebrow" data-i18n="dl.eyebrow">Download</p>
+      <h2 data-i18n="dl.title">Cortex Whisper 0.1.0 Beta</h2>
+      <p class="lede" data-i18n="dl.lede">
+        Build para Linux x86_64. Os modelos Whisper não vêm embutidos — o modelo escolhido é
+        baixado no primeiro uso e reaproveitado depois.
+      </p>
+      <div class="cta">
+        <a class="btn btn-primary" data-dl="deb" href="https://github.com/matheusz-nied/cortex-whisper/releases/latest">
+          <span>
+            <span data-i18n="dl.deb">cortex-whisper_0.1.0_amd64.deb</span>
+            <small data-i18n="dl.debSub">Ubuntu / Debian e derivados</small>
+          </span>
+        </a>
+        <a class="btn" data-dl="appimage" href="https://github.com/matheusz-nied/cortex-whisper/releases/latest">
+          <span>
+            <span data-i18n="dl.appimage">Cortex-Whisper-0.1.0-x86_64.AppImage</span>
+            <small data-i18n="dl.appimageSub">Portátil, qualquer distribuição</small>
+          </span>
+        </a>
+      </div>
+      <p class="btn-note" data-i18n="dl.note">
+        Confira os hashes no arquivo <code>SHA256SUMS</code> publicado junto da release.
+        Todas as versões ficam disponíveis na
+        <a href="https://github.com/matheusz-nied/cortex-whisper/releases">página de releases</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="wrap">
+      <p class="eyebrow" data-i18n="faq.eyebrow">Perguntas frequentes</p>
+      <h2 data-i18n="faq.title">Antes de instalar</h2>
+      <div style="margin-top:26px">
+        <details><summary data-i18n="faq.q1">Em que idioma ele transcreve?</summary><div class="body"><p data-i18n="faq.a1">A transcrição vem configurada para português (<code>pt</code>), que foi o caso de uso original do projeto. A interface do aplicativo está em inglês.</p></div></details>
+        <details><summary data-i18n="faq.q2">Preciso de GPU?</summary><div class="body"><p data-i18n="faq.a2">Não. A inferência roda na CPU com quantização int8. Se uma GPU com CUDA estiver disponível, o app tenta usá-la automaticamente.</p></div></details>
+        <details><summary data-i18n="faq.q3">Funciona offline?</summary><div class="body"><p data-i18n="faq.a3">Sim, depois que o modelo é baixado. A única conexão necessária é o download inicial do modelo Whisper pelo Hugging Face.</p></div></details>
+        <details><summary data-i18n="faq.q4">Por que o overlay fica no centro da tela?</summary><div class="body"><p data-i18n="faq.a4">O Wayland impede que aplicativos comuns leiam a posição global do ponteiro. Centralizar o overlay é a abordagem confiável em configurações com múltiplos monitores.</p></div></details>
+        <details><summary data-i18n="faq.q5">A colagem automática não funciona. E agora?</summary><div class="body"><p data-i18n="faq.a5">No Wayland, a colagem depende do serviço de usuário do <code>ydotool</code> estar ativo. Confirme com <code>systemctl --user status ydotool.service</code> e rode <code>cortex-whisper --diagnostics</code>.</p></div></details>
+        <details><summary data-i18n="faq.q6">Quando sai a versão para Windows e macOS?</summary><div class="body"><p data-i18n="faq.a6">O build de Windows já existe, mas ainda não foi validado em hardware real. macOS ainda não tem a integração de plataforma implementada. Acompanhe pelo repositório.</p></div></details>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div>
+      <div style="color:var(--text);font-weight:600;margin-bottom:4px">Cortex Whisper</div>
+      <span data-i18n="foot.lic">Licença MIT · © 2026 Matheus Fernandes da Silva</span><br>
+      <span data-i18n="foot.disc">Projeto open source independente, sem afiliação com a OpenAI.</span>
+    </div>
+    <nav>
+      <a href="https://github.com/matheusz-nied/cortex-whisper" data-i18n="foot.repo">Repositório</a>
+      <a href="https://github.com/matheusz-nied/cortex-whisper/issues" data-i18n="foot.issues">Reportar problema</a>
+      <a href="https://github.com/matheusz-nied/cortex-whisper/blob/main/THIRD_PARTY_NOTICES.md" data-i18n="foot.third">Licenças de terceiros</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var REPO    = "https://github.com/matheusz-nied/cortex-whisper";
+  var TAG     = "v0.1.0";
+  var DEB     = "cortex-whisper_0.1.0_amd64.deb";
+  var APPIMG  = "Cortex-Whisper-0.1.0-x86_64.AppImage";
+  var ASSET   = REPO + "/releases/download/" + TAG + "/";
+
+  // Point every download control at the released asset.
+  document.getElementById("dl-deb").href = ASSET + DEB;
+  document.getElementById("dl-appimage").href = ASSET + APPIMG;
+  document.querySelector('[data-dl="deb"]').href = ASSET + DEB;
+  document.querySelector('[data-dl="appimage"]').href = ASSET + APPIMG;
+
+  var STR = {
+    pt: {}, // pt-BR is authored directly in the markup; empty means "restore original"
+    en: {
+      "nav.how":"How it works", "nav.features":"Features", "nav.privacy":"Privacy",
+      "nav.install":"Install", "nav.download":"Download",
+
+      "hero.badge":"v0.1.0 BETA — LINUX",
+      "hero.title1":"Hold F8, speak, release.",
+      "hero.title2":"The text lands right where you are.",
+      "hero.lede":"AI voice dictation that runs entirely on your machine. Cortex Whisper records, transcribes locally with <code>faster-whisper</code>, and pastes the result into the app that already has focus. No audio ever leaves your computer.",
+      "hero.deb":"Download .deb", "hero.debSub":"Ubuntu / Debian · x86_64",
+      "hero.appimage":"Download AppImage", "hero.appimageSub":"Any distro · x86_64",
+      "hero.source":"Source code",
+      "hero.note":"Free and open source under the MIT license. No account, no subscription, no telemetry.",
+      "hero.shot1":"Recording", "hero.shot2":"Transcribing", "hero.shot3":"Pasted",
+
+      "how.eyebrow":"How it works",
+      "how.title":"Four seconds from speech to text",
+      "how.lede":"No window to open, no button to click. The compact overlay appears centered on the active display and dismisses itself.",
+      "how.f1":"Hold F8", "how.f2":"record audio", "how.f3":"release F8",
+      "how.f4":"transcribe locally", "how.f5":"copy", "how.f6":"paste into the focused app",
+      "how.s1t":"Put your cursor anywhere",
+      "how.s1d":"Chat, code editor, email field, terminal. Cortex Whisper never steals focus from the active window.",
+      "how.s2t":"Hold the key and speak",
+      "how.s2d":"F8 by default, configurable between F6 and F12. One global hotkey that works from any application.",
+      "how.s3t":"Release and get your text",
+      "how.s3d":"The Whisper model runs on your CPU (or CUDA GPU when available) and the text is pasted automatically.",
+
+      "feat.eyebrow":"Features", "feat.title":"What's in the box",
+      "feat.1t":"Global hold-to-talk hotkey", "feat.1d":"Hold to record, release to transcribe. Hotkey configurable from F6 to F12.",
+      "feat.2t":"Fully local", "feat.2d":"Audio is processed in memory by faster-whisper and is never written to disk or sent to a server.",
+      "feat.3t":"small and medium models", "feat.3d":"Trade speed for accuracy. Your selection persists across sessions.",
+      "feat.4t":"int8 on CPU, CUDA when present", "feat.4d":"int8-quantized CPU inference with an automatic CUDA attempt when a GPU is available.",
+      "feat.5t":"Microphone selection", "feat.5d":"Pick your audio input and validate it with a built-in three-second test.",
+      "feat.6t":"Compact neon overlay", "feat.6d":"Recording, transcribing, success, and error states, always centered on the active display.",
+      "feat.7t":"Automatic paste", "feat.7d":"Text goes to the system clipboard and is pasted into the focused app via wl-clipboard and ydotool.",
+      "feat.8t":"Tray, pause, and logs", "feat.8d":"System tray controls, pause mode, rotating logs, and optional automatic startup.",
+      "feat.9t":"GUI and terminal modes", "feat.9d":"Use the graphical interface or run it with <code>--no-gui</code> straight from the terminal.",
+
+      "priv.eyebrow":"Privacy", "priv.title":"Your voice goes nowhere",
+      "priv.lede":"There is no application server. No account. No telemetry. The only possible network connection is downloading the Whisper model on first run.",
+      "priv.1t":"Audio stays in memory", "priv.1d":"The recording is processed locally and discarded. Nothing is saved to disk.",
+      "priv.2t":"Logs without content", "priv.2d":"Logs record operational events and character counts — never the transcribed text.",
+      "priv.3t":"Model downloaded once", "priv.3d":"Hugging Face is contacted only when a model isn't in the local cache yet. After that, it works offline.",
+      "priv.where":"Where your data lives", "priv.th1":"Data",
+      "priv.r1":"Configuration", "priv.r2":"Logs", "priv.r3":"Models", "priv.r3v":"Hugging Face user cache",
+
+      "plat.eyebrow":"Compatibility", "plat.title":"Platform status",
+      "plat.callout":"Version 0.1.0 Beta is validated only on Linux with GNOME/Wayland. Windows support is experimental and has not been tested on real hardware. macOS is not implemented yet.",
+      "plat.th1":"Platform", "plat.th2":"Status", "plat.th3":"Notes",
+      "plat.p1":"Tested", "plat.n1":"Primary development platform",
+      "plat.p2":"Implemented", "plat.n2":"Needs broader testing",
+      "plat.p3":"Experimental", "plat.n3":"Build and installer exist, but need real-hardware testing",
+      "plat.p4":"Not supported", "plat.n4":"Platform integration has not been implemented",
+
+      "inst.eyebrow":"Install", "inst.title":"Getting it running on Linux",
+      "inst.deps":"1. System dependencies",
+      "inst.depsd":"On Ubuntu and Debian-based systems. <code>wl-copy</code> provides the clipboard and <code>ydotool</code> sends Ctrl+V to the focused app.",
+      "inst.pkg":"2. Install the package",
+      "inst.portal":"On GNOME/Wayland, the system asks for global-shortcut permission on first launch.",
+      "inst.src":"Run from source", "inst.srcd":"Python 3.10 or newer is required.",
+      "inst.cli":"Command line",
+
+      "dl.eyebrow":"Download", "dl.title":"Cortex Whisper 0.1.0 Beta",
+      "dl.lede":"Linux x86_64 build. Whisper models are not bundled — the selected model is downloaded on first use and reused afterward.",
+      "dl.deb":"cortex-whisper_0.1.0_amd64.deb", "dl.debSub":"Ubuntu / Debian and derivatives",
+      "dl.appimage":"Cortex-Whisper-0.1.0-x86_64.AppImage", "dl.appimageSub":"Portable, any distribution",
+      "dl.note":"Verify the hashes in the <code>SHA256SUMS</code> file published alongside the release. Every version stays available on the <a href=\"https://github.com/matheusz-nied/cortex-whisper/releases\">releases page</a>.",
+
+      "faq.eyebrow":"FAQ", "faq.title":"Before you install",
+      "faq.q1":"What language does it transcribe?",
+      "faq.a1":"Transcription defaults to Portuguese (<code>pt</code>), the project's original use case. The application interface is in English.",
+      "faq.q2":"Do I need a GPU?",
+      "faq.a2":"No. Inference runs on the CPU with int8 quantization. If a CUDA-capable GPU is available, the app tries to use it automatically.",
+      "faq.q3":"Does it work offline?",
+      "faq.a3":"Yes, once the model is downloaded. The only required connection is the initial Whisper model download from Hugging Face.",
+      "faq.q4":"Why is the overlay centered on screen?",
+      "faq.a4":"Wayland prevents normal applications from reading global pointer coordinates. Centering the overlay is the reliable approach in multi-monitor layouts.",
+      "faq.q5":"Automatic paste isn't working. What now?",
+      "faq.a5":"On Wayland, pasting depends on a working <code>ydotool</code> user service. Check it with <code>systemctl --user status ydotool.service</code> and run <code>cortex-whisper --diagnostics</code>.",
+      "faq.q6":"When are Windows and macOS coming?",
+      "faq.a6":"The Windows build already exists but has not been validated on real hardware. macOS platform integration is not implemented yet. Follow the repository for updates.",
+
+      "foot.lic":"MIT License · © 2026 Matheus Fernandes da Silva",
+      "foot.disc":"Independent open-source project, not affiliated with OpenAI.",
+      "foot.repo":"Repository", "foot.issues":"Report an issue", "foot.third":"Third-party licenses"
+    }
+  };
+
+  var nodes = document.querySelectorAll("[data-i18n]");
+  // Snapshot the authored pt-BR copy so switching back is lossless.
+  nodes.forEach(function (n) { STR.pt[n.getAttribute("data-i18n")] = n.innerHTML; });
+
+  var buttons = document.querySelectorAll(".lang button");
+
+  function apply(lang) {
+    var dict = STR[lang] || STR.pt;
+    nodes.forEach(function (n) {
+      var v = dict[n.getAttribute("data-i18n")];
+      if (v !== undefined) n.innerHTML = v;
+    });
+    document.documentElement.lang = lang === "en" ? "en" : "pt-BR";
+    document.title = lang === "en"
+      ? "Cortex Whisper — Private, local voice dictation"
+      : "Cortex Whisper — Ditado por voz local e privado";
+    buttons.forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.lang === lang));
+    });
+    try { localStorage.setItem("cw-lang", lang); } catch (e) {}
+  }
+
+  var stored = null;
+  try { stored = localStorage.getItem("cw-lang"); } catch (e) {}
+  var initial = stored || (/^pt\b/i.test(navigator.language || "") ? "pt" : "en");
+  if (initial !== "pt") apply(initial);
+  else apply("pt");
+
+  buttons.forEach(function (b) {
+    b.addEventListener("click", function () { apply(b.dataset.lang); });
+  });
+
+  /* ---- ambient touches (skipped when the user prefers reduced motion) ---- */
+  var reduced = window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Ticking timer inside the hero overlay mock.
+  var timeEl = document.getElementById("mock-time");
+  if (timeEl && !reduced) {
+    var t = 7;
+    setInterval(function () {
+      t = (t + 1) % 600;
+      var m = Math.floor(t / 60), s = t % 60;
+      timeEl.textContent = "0" + m + ":" + (s < 10 ? "0" : "") + s;
+    }, 1000);
+  }
+
+  // Scroll-reveal for cards and shots.
+  if (!reduced && "IntersectionObserver" in window) {
+    document.documentElement.classList.add("js");
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          e.target.classList.add("in");
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
+    document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+  }
+})();
+</script>
+</body>
+</html>
