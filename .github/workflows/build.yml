@@ -120,7 +120,7 @@ jobs:
           sha256sum --check SHA256SUMS
 
       - name: Upload Linux packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cortex-whisper-linux
           if-no-files-found: error
@@ -165,7 +165,7 @@ jobs:
           dist\cortex-whisper\cortex-whisper.exe --self-test
 
       - name: Upload Windows installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cortex-whisper-windows
           if-no-files-found: error
@@ -181,7 +181,7 @@ jobs:
       contents: write
     steps:
       - name: Download packages
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           pattern: cortex-whisper-*
           path: release-assets
