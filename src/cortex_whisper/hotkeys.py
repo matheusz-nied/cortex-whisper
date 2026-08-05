@@ -29,6 +29,9 @@ def system_process_environment() -> dict[str, str]:
         environment.pop("LD_LIBRARY_PATH", None)
     else:
         environment["LD_LIBRARY_PATH"] = original_library_path
+    if environment.pop("CORTEX_WHISPER_APPIMAGE_GIO_ISOLATED", None):
+        for variable in ("GIO_MODULE_DIR", "GIO_USE_VFS", "GSETTINGS_BACKEND"):
+            environment.pop(variable, None)
     return environment
 
 

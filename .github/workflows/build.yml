@@ -175,9 +175,49 @@ jobs:
           retention-days: 14
           path: dist/Cortex-Whisper-Setup-*.exe
 
+  validate-linux-portability:
+    name: Validate Linux package (Ubuntu 24.04)
+    needs: package-linux
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download Linux packages
+        uses: actions/download-artifact@v8
+        with:
+          name: cortex-whisper-linux
+          path: dist
+
+      - name: Install newer desktop libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dconf-gsettings-backend gvfs-libs libportaudio2 python3-dbus python3-gi
+
+      - name: Smoke-test AppImage against newer GIO modules
+        shell: bash
+        run: |
+          chmod +x dist/Cortex-Whisper-*-x86_64.AppImage
+          mkdir -p "$RUNNER_TEMP/state" "$RUNNER_TEMP/config"
+          set +e
+          timeout 8s env \
+            APPIMAGE_EXTRACT_AND_RUN=1 \
+            QT_QPA_PLATFORM=offscreen \
+            XDG_STATE_HOME="$RUNNER_TEMP/state" \
+            XDG_CONFIG_HOME="$RUNNER_TEMP/config" \
+            dist/Cortex-Whisper-*-x86_64.AppImage >appimage-smoke.log 2>&1
+          status=$?
+          set -e
+          cat appimage-smoke.log
+          grep -q "Cortex Whisper started" appimage-smoke.log
+          if grep -E "undefined symbol|Failed to load module|version .+ not found" appimage-smoke.log; then
+            exit 1
+          fi
+          if [[ "$status" -ne 0 && "$status" -ne 124 ]]; then
+            exit "$status"
+          fi
+
   release:
     name: Create GitHub pre-release
-    needs: [package-linux, package-windows]
+    needs: [package-linux, validate-linux-portability, package-windows]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-22.04
     permissions:

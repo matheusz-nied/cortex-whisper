@@ -66,6 +66,15 @@ def test_linux_bundle_uses_host_glib_libraries(tmp_path):
     assert unrelated.exists()
 
 
+def test_appimage_isolates_host_gio_modules():
+    project_root = Path(__file__).resolve().parent.parent
+    app_run = (project_root / "packaging" / "linux" / "AppRun").read_text(encoding="utf-8")
+
+    assert "GIO_MODULE_DIR=" in app_run
+    assert "GIO_USE_VFS=local" in app_run
+    assert "GSETTINGS_BACKEND=memory" in app_run
+
+
 def test_frozen_pyav_stub_supports_import_but_rejects_file_api():
     project_root = Path(__file__).resolve().parent.parent
     hook = project_root / "packaging" / "runtime_hooks" / "pyi_rth_av_stub.py"
