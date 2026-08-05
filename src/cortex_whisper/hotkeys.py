@@ -21,6 +21,17 @@ class HotkeyBackend(Protocol):
     def stop(self) -> None: ...
 
 
+def system_process_environment() -> dict[str, str]:
+    """Return an environment safe for host executables launched by PyInstaller."""
+    environment = os.environ.copy()
+    original_library_path = environment.pop("LD_LIBRARY_PATH_ORIG", None)
+    if original_library_path is None:
+        environment.pop("LD_LIBRARY_PATH", None)
+    else:
+        environment["LD_LIBRARY_PATH"] = original_library_path
+    return environment
+
+
 def pynput_key(name: str):
     from pynput import keyboard
 
@@ -121,12 +132,15 @@ class PortalHotkey:
             stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
+            env=system_process_environment(),
         )
         self.thread = threading.Thread(target=self._read, name="portal-hotkey", daemon=True)
         self.thread.start()
 
     def _read(self) -> None:
         assert self.process is not None and self.process.stdout is not None
+        unexpected_output: list[str] = []
+        reported_error = False
         for raw in self.process.stdout:
             line = raw.strip()
             if line == "PRESS":
@@ -135,8 +149,12 @@ class PortalHotkey:
                 self.on_release()
             elif line.startswith("ERROR:"):
                 self.on_error(line.removeprefix("ERROR:").strip())
-        if self.process.poll() not in {0, None}:
-            self.on_error("the global hotkey service stopped unexpectedly")
+                reported_error = True
+            elif line:
+                unexpected_output.append(line)
+        if self.process.poll() not in {0, None} and not reported_error:
+            detail = unexpected_output[-1] if unexpected_output else "no error details were reported"
+            self.on_error(f"the global hotkey service stopped unexpectedly: {detail}")
 
     def stop(self) -> None:
         if self.process is not None and self.process.poll() is None:
