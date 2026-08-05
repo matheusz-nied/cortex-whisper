@@ -17,7 +17,9 @@ def test_wayland_copy_uses_wl_copy(monkeypatch):
         return SimpleNamespace(returncode=0, stderr="")
 
     monkeypatch.setattr("cortex_whisper.integration.subprocess.run", run)
-    copied, backend = SystemIntegration().copy_text("Hello ")
+    integration = SystemIntegration()
+    integration.platform = "linux"
+    copied, backend = integration.copy_text("Hello ")
 
     assert copied is True
     assert backend == "wl-copy"
@@ -32,7 +34,9 @@ def test_ydotool_timeout_becomes_a_visible_error(monkeypatch):
         raise subprocess.TimeoutExpired("ydotool", 5)
 
     monkeypatch.setattr("cortex_whisper.integration.subprocess.run", run)
-    pasted, error = SystemIntegration().paste()
+    integration = SystemIntegration()
+    integration.platform = "linux"
+    pasted, error = integration.paste()
 
     assert pasted is False
     assert "ydotool" in error
