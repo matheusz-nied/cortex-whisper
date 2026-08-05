@@ -19,4 +19,8 @@ def ydotool_socket_path() -> Path:
     runtime = os.environ.get("XDG_RUNTIME_DIR")
     if runtime:
         return Path(runtime) / ".ydotool_socket"
-    return Path(f"/run/user/{os.getuid()}/.ydotool_socket")
+    # os.getuid() only exists on POSIX; on Windows there is no ydotool socket,
+    # so return a path that simply never resolves instead of crashing.
+    if hasattr(os, "getuid"):
+        return Path(f"/run/user/{os.getuid()}/.ydotool_socket")
+    return Path("/run/user/.ydotool_socket")
