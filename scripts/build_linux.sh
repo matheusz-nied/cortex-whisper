@@ -25,9 +25,9 @@ install -d "$PACKAGE_ROOT/DEBIAN" "$PACKAGE_ROOT/opt/cortex-whisper" \
   "$PACKAGE_ROOT/usr/share/doc/cortex-whisper"
 sed "s/@VERSION@/$VERSION/g" packaging/linux/control.in > "$PACKAGE_ROOT/DEBIAN/control"
 cp -a dist/cortex-whisper/. "$PACKAGE_ROOT/opt/cortex-whisper/"
-ln -s /opt/cortex-whisper/cortex-whisper "$PACKAGE_ROOT/usr/bin/cortex-whisper-gui"
-ln -s /opt/cortex-whisper/cortex-whisper "$PACKAGE_ROOT/usr/bin/cortex-whisper"
-ln -s /opt/cortex-whisper/cortex-whisper "$PACKAGE_ROOT/usr/bin/whisper-ditado"
+cp packaging/linux/cortex-whisper-launcher "$PACKAGE_ROOT/usr/bin/cortex-whisper"
+ln -s cortex-whisper "$PACKAGE_ROOT/usr/bin/cortex-whisper-gui"
+ln -s cortex-whisper "$PACKAGE_ROOT/usr/bin/whisper-ditado"
 cp io.github.matheusz_nied.CortexWhisper.desktop "$PACKAGE_ROOT/usr/share/applications/"
 sed "s/@VERSION@/$VERSION/g" \
   packaging/linux/io.github.matheusz_nied.CortexWhisper.metainfo.xml.in \
@@ -37,6 +37,7 @@ cp -a build/legal/. "$PACKAGE_ROOT/usr/share/doc/cortex-whisper/"
 find "$PACKAGE_ROOT" -type d -exec chmod 0755 {} +
 find "$PACKAGE_ROOT" -type f -exec chmod 0644 {} +
 chmod 0755 "$PACKAGE_ROOT/opt/cortex-whisper/cortex-whisper"
+chmod 0755 "$PACKAGE_ROOT/usr/bin/cortex-whisper"
 dpkg-deb --root-owner-group --build \
   "$PACKAGE_ROOT" "$PROJECT_DIR/dist/cortex-whisper_${VERSION}_amd64.deb"
 

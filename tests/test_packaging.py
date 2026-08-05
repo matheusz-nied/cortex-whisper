@@ -66,13 +66,18 @@ def test_linux_bundle_uses_host_glib_libraries(tmp_path):
     assert unrelated.exists()
 
 
-def test_appimage_isolates_host_gio_modules():
+def test_linux_launchers_isolate_host_gio_modules():
     project_root = Path(__file__).resolve().parent.parent
-    app_run = (project_root / "packaging" / "linux" / "AppRun").read_text(encoding="utf-8")
+    launchers = (
+        project_root / "packaging" / "linux" / "AppRun",
+        project_root / "packaging" / "linux" / "cortex-whisper-launcher",
+    )
 
-    assert "GIO_MODULE_DIR=" in app_run
-    assert "GIO_USE_VFS=local" in app_run
-    assert "GSETTINGS_BACKEND=memory" in app_run
+    for launcher in launchers:
+        content = launcher.read_text(encoding="utf-8")
+        assert "GIO_MODULE_DIR=" in content
+        assert "GIO_USE_VFS=local" in content
+        assert "GSETTINGS_BACKEND=memory" in content
 
 
 def test_frozen_pyav_stub_supports_import_but_rejects_file_api():

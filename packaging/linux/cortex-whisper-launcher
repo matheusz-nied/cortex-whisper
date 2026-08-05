@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Keep host GIO modules out of the frozen application. They may be newer than
+# the binary libraries collected on the Ubuntu 22.04 package runner.
+export GIO_MODULE_DIR=/opt/cortex-whisper/_internal/gio-modules
+export GIO_USE_VFS=local
+export GSETTINGS_BACKEND=memory
+export CORTEX_WHISPER_APPIMAGE_GIO_ISOLATED=1
+
+exec /opt/cortex-whisper/cortex-whisper "$@"
