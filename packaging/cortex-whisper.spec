@@ -1,6 +1,5 @@
-# -*- mode: python ; coding: utf-8 -*-
-from pathlib import Path
 import sys
+from pathlib import Path
 
 root = Path.cwd()
 keyboard_imports = (
@@ -9,12 +8,11 @@ keyboard_imports = (
     else ["pynput.keyboard._xorg", "pynput._util.xorg"]
 )
 
-a = Analysis(
+a = Analysis(  # noqa: F821
     [str(root / "packaging" / "launcher.py")],
     pathex=[str(root / "src")],
     binaries=[],
     datas=[
-        (str(root / "cortex_shortcut_portal.py"), "."),
         (str(root / "assets" / "cortex-whisper.svg"), "assets"),
         (str(root / "build" / "legal"), "legal"),
     ],
@@ -35,8 +33,8 @@ a = Analysis(
     ],
     noarchive=False,
 )
-pyz = PYZ(a.pure)
-exe = EXE(
+pyz = PYZ(a.pure)  # noqa: F821
+exe = EXE(  # noqa: F821
     pyz,
     a.scripts,
     [],
@@ -50,7 +48,7 @@ exe = EXE(
     # application free of a console window.
     console=sys.platform != "win32",
 )
-coll = COLLECT(
+coll = COLLECT(  # noqa: F821
     exe,
     a.binaries,
     a.datas,

@@ -2,15 +2,14 @@
 
 [![Build](https://github.com/matheusz-nied/cortex-whisper/actions/workflows/build.yml/badge.svg)](https://github.com/matheusz-nied/cortex-whisper/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-22d3ee)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.0%20beta-ff2e7e)](https://github.com/matheusz-nied/cortex-whisper/releases)
+[![Version](https://img.shields.io/badge/version-0.2.0%20beta-ff2e7e)](https://github.com/matheusz-nied/cortex-whisper/releases)
 [![Platform](https://img.shields.io/badge/platform-Linux-7c5cff)](#platform-status)
 
 Private, local AI voice dictation powered by `faster-whisper`.
 
 Hold **F8**, speak, and release. Cortex Whisper records your voice, transcribes
-it on your computer, and pastes the result into the application that already has
-focus. A compact cyberpunk-inspired overlay shows when the app is recording,
-transcribing, or finished.
+it on your computer, copies the result, and attempts to paste it into the
+application that already has focus.
 
 <p align="center">
   <img src="docs/assets/overlay-recording.png" alt="Recording overlay" width="248">
@@ -19,120 +18,125 @@ transcribing, or finished.
 </p>
 
 > [!IMPORTANT]
-> Version **0.1.0 Beta** is validated only on Linux with GNOME/Wayland. Windows
-> support is experimental and has not been tested on real hardware. macOS is not
-> implemented yet.
+> Version **0.2.0 Beta** targets Linux x86_64 with GNOME/Wayland. The Flatpak is
+> the primary Linux package. Ubuntu `.deb` builds are produced separately for
+> 24.04 and 26.04. Windows remains experimental; macOS is not implemented.
 
-Cortex Whisper is an independent open-source project. It is not affiliated with,
-endorsed by, or sponsored by OpenAI.
+Cortex Whisper is an independent open-source project. It is not affiliated
+with, endorsed by, or sponsored by OpenAI.
 
 ## Platform status
 
 | Platform | Status | Notes |
 | --- | --- | --- |
-| Linux / GNOME Wayland | Tested | Primary development platform |
+| Linux / GNOME Wayland | Tested | Primary platform; use Flatpak |
+| Ubuntu 24.04 and 26.04 | Beta | Dedicated `.deb` for each Ubuntu version |
 | Linux / X11 | Implemented | Needs broader testing |
-| Windows 10/11 | Experimental | Build and installer exist, but need real-hardware testing |
-| macOS | Not supported | Platform integration has not been implemented |
+| Windows 10/11 | Experimental | Installer exists; real-hardware testing is incomplete |
+| macOS | Not supported | Desktop integration is not implemented |
 
 ## Features
 
-- Hold-to-talk global hotkey, with **F8** as the default.
-- Local transcription; recorded audio is never sent to an application server.
-- `small` and `medium` Whisper models with persistent selection.
-- CPU inference with `int8` quantization and an automatic CUDA attempt when available.
-- Microphone selection and a built-in three-second input test.
-- Compact neon overlay for recording, transcribing, success, and errors.
-- Clipboard delivery and automatic paste into the focused application.
-- Tray controls, pause mode, rotating logs, and optional automatic startup.
-- GUI and terminal modes.
-
-The interface and documentation are in English. Transcription defaults to
-Portuguese (`pt`) for the project's original use case.
+- Hold-to-talk global shortcut through the desktop portal; F8 is the default.
+- Local transcription; audio is kept in memory and is not uploaded.
+- `small` and `medium` models with persistent selection.
+- CPU `int8` inference and best-effort CUDA detection.
+- Microphone selection and a three-second input test.
+- Status overlay, tray controls, pause mode, logs, and optional autostart.
+- Clipboard fallback when automatic paste is unavailable.
 
 ```text
-Hold F8 → record audio → release F8 → transcribe locally → copy → paste
+Hold F8 → record → release F8 → transcribe locally → copy → paste
 ```
 
-Models are not bundled. The selected model is downloaded to the user's Hugging
-Face cache on first use and reused afterward. Expect a wait on the very first
-run while the model downloads.
+Models are not bundled. The selected model is downloaded from Hugging Face on
+first use and reused afterward.
 
 ## Install
 
-Download a Linux x86_64 build from the
+Download the Linux x86_64 artifacts from the
 [releases page](https://github.com/matheusz-nied/cortex-whisper/releases).
 
-**Debian / Ubuntu (`.deb`)**
+### Flatpak — recommended
+
+Make sure Flathub is configured, then install the downloaded bundle:
 
 ```bash
-sudo apt install ./cortex-whisper_0.1.0_amd64.deb
+flatpak remote-add --if-not-exists flathub \
+  https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install --user ./Cortex-Whisper-0.2.0-x86_64.flatpak
+flatpak run io.github.matheusz_nied.CortexWhisper
+```
+
+The Flatpak isolates Qt, GLib, Python, PortAudio, and the transcription stack
+from the host distribution. It has narrow access to Wayland/X11, audio, the
+network for model downloads, the legacy Cortex Whisper configuration directory,
+and the `ydotool` socket.
+
+### Ubuntu `.deb`
+
+Choose the file that exactly matches the Ubuntu release:
+
+```bash
+# Ubuntu 24.04
+sudo apt install ./cortex-whisper_0.2.0-1_ubuntu24.04_amd64.deb
+
+# Ubuntu 26.04
+sudo apt install ./cortex-whisper_0.2.0-1_ubuntu26.04_amd64.deb
+
 cortex-whisper
 ```
 
-The package declares its own dependencies, so `apt` pulls in what it needs.
-`ydotool` and `wl-clipboard` are listed as recommended packages because
-automatic paste depends on them; keep the default `apt` behaviour that installs
-recommendations, or add them manually.
+Do not install a 26.04 package on 24.04. Each `.deb` is built and tested inside
+its target Ubuntu environment.
 
-**Any distribution (AppImage)**
+### Verify downloads
+
+Run this from the folder containing an artifact and its checksum file:
 
 ```bash
-chmod +x Cortex-Whisper-0.1.0-x86_64.AppImage
-./Cortex-Whisper-0.1.0-x86_64.AppImage
+sha256sum --check SHA256SUMS-flatpak
+# or SHA256SUMS-ubuntu24.04 / SHA256SUMS-ubuntu26.04
 ```
 
-The AppImage does not install system dependencies. Install the runtime packages
-listed under [Linux requirements](#linux-requirements) before running it.
+### Automatic paste on Wayland
 
-Verify your download against the `SHA256SUMS` file published with the release:
-
-```bash
-sha256sum -c SHA256SUMS --ignore-missing
-```
-
-Prefer to build it yourself? See [Build packages](#build-packages).
-
-### Linux requirements
-
-Required when running from source or from the AppImage. On Ubuntu and
-Debian-based systems:
+Wayland intentionally prevents ordinary applications from injecting keyboard
+events. Cortex Whisper therefore copies every result to the clipboard first,
+then uses the host `ydotool` service for Ctrl+V when available:
 
 ```bash
-sudo apt install libportaudio2 wl-clipboard ydotool python3-dbus python3-gi
+sudo apt install ydotool
 systemctl --user enable --now ydotool.service
+systemctl --user status ydotool.service
 ```
 
-GNOME/Wayland requests permission for the global shortcut on first launch.
-`wl-copy` provides the clipboard and `ydotool` sends Ctrl+V to the focused app.
+The Flatpak contains only the unprivileged ydotool client and can access only
+`$XDG_RUNTIME_DIR/.ydotool_socket`; it does not bundle or start the privileged
+daemon. If the service is unavailable, transcription still succeeds and the
+text remains on the clipboard for manual Ctrl+V.
 
 ### Uninstall
 
 ```bash
-sudo apt remove cortex-whisper          # .deb install
-rm Cortex-Whisper-0.1.0-x86_64.AppImage # AppImage
+flatpak uninstall --user io.github.matheusz_nied.CortexWhisper
+sudo apt remove cortex-whisper # only for a .deb installation
 ```
 
-Configuration, logs, and downloaded models are left in place. Remove them with:
-
-```bash
-rm -rf ~/.config/CortexWhisper ~/.local/state/CortexWhisper
-rm -rf ~/.cache/huggingface/hub/models--Systran--faster-whisper-*
-```
+Add `--delete-data` to the Flatpak uninstall command only if you also want to
+remove its configuration, logs, and downloaded model cache.
 
 ## Usage
 
-1. Start Cortex Whisper and wait for the model to become ready.
+1. Start Cortex Whisper and wait until the model is ready.
 2. Place the cursor in a text field.
 3. Hold **F8** while speaking.
-4. Release **F8** to transcribe and paste.
-5. Use the tray menu to pause, open Settings, inspect logs, or quit.
+4. Release **F8** to transcribe, copy, and paste.
+5. Use the tray menu for Settings, pause, logs, or quit.
 
-The overlay stays centered on the active display. This is reliable on Wayland
-and avoids stealing focus in multi-monitor layouts.
-
-Settings include the model, microphone, an F6–F12 hold-to-talk hotkey, automatic
-startup, and a live microphone test.
+GNOME requests global-shortcut and background-start permission through desktop
+portals. Cortex Whisper remembers the completed background request and does not
+ask on every launch.
 
 ## Command line
 
@@ -142,50 +146,42 @@ cortex-whisper --version
 cortex-whisper --list-microphones
 cortex-whisper --diagnostics
 cortex-whisper --no-gui --model medium
-cortex-whisper --microphone "ME6S"
 ```
 
-From a source checkout, replace `cortex-whisper` with `python cortex_whisper.py`.
+For Flatpak, prefix commands with:
+
+```bash
+flatpak run io.github.matheusz_nied.CortexWhisper --diagnostics
+```
 
 Terminal mode uses Enter to start and stop recording and `q` to quit.
 
 ## Troubleshooting
 
-Start with the built-in environment report. It prints JSON covering the app
-version, session type, selected model and hotkey, the detected paste backend,
-and how many microphones were found:
-
-```bash
-cortex-whisper --diagnostics
-```
-
 | Symptom | Check |
 | --- | --- |
-| Text is copied but never pasted | `systemctl --user status ydotool.service`. Automatic paste on Wayland needs this service running. The text is still on the clipboard, so Ctrl+V works meanwhile. |
-| F8 does nothing | GNOME asks for global-shortcut permission on first launch. If it was denied, reset it under Settings → Applications → Cortex Whisper. Also confirm no other app owns F8. |
-| No audio captured | `cortex-whisper --list-microphones`, then select the right input in Settings and use the built-in three-second test. |
-| First run hangs on startup | The Whisper model is downloading to the Hugging Face cache. Subsequent runs are offline and fast. |
-| AppImage will not start | Some distributions no longer ship FUSE 2. Run it with `./Cortex-Whisper-0.1.0-x86_64.AppImage --appimage-extract-and-run`. |
+| Text is copied but not pasted | Run `systemctl --user status ydotool.service`; use Ctrl+V while fixing the service. |
+| F8 does nothing | Review the Global Shortcuts permission for Cortex Whisper in desktop settings and check whether another app owns F8. |
+| No audio is captured | Run `--list-microphones`, select the correct input, then use the built-in microphone test. |
+| First startup is slow | The selected Whisper model is downloading; later starts reuse the cache. |
+| Flatpak needs a clean reset | Run `flatpak uninstall --user --delete-data io.github.matheusz_nied.CortexWhisper`, then reinstall. |
 
-Logs are written to `~/.local/state/CortexWhisper/log/` and record operational
-events only, never transcribed text.
+Logs contain operational events and character counts, never transcribed text.
 
 ## Data and privacy
 
-- Audio is processed locally by `faster-whisper`, kept in memory, and not saved.
+- Audio is processed locally and is not saved.
 - Transcribed text is placed in the system clipboard.
-- Hugging Face may be contacted when a model must be downloaded.
+- Hugging Face is contacted only when model files are needed.
 - There is no telemetry.
-- Logs contain operational events and character counts, never transcribed text.
+- Existing native Cortex Whisper preferences are copied on the first Flatpak
+  launch; model caches are intentionally not migrated into the sandbox.
 
-| Data | Linux | Windows |
+| Data | Native Linux | Flatpak |
 | --- | --- | --- |
-| Configuration | `~/.config/CortexWhisper/config.json` | `%LOCALAPPDATA%\CortexWhisper\config.json` |
-| Logs | `~/.local/state/CortexWhisper/log/` | `%LOCALAPPDATA%\CortexWhisper\Logs\` |
-| Models | Hugging Face user cache | Hugging Face user cache |
-
-Existing `WhisperDitado` configuration and logs are copied automatically on the
-first Cortex Whisper launch. The originals are retained as a recovery backup.
+| Configuration | `~/.config/CortexWhisper/` | `~/.var/app/io.github.matheusz_nied.CortexWhisper/config/CortexWhisper/` |
+| Logs | `~/.local/state/CortexWhisper/log/` | App-specific Flatpak data directory |
+| Models | Hugging Face user cache | App-specific Flatpak cache |
 
 ## Run from source
 
@@ -200,69 +196,52 @@ python -m pip install -r requirements.txt
 python cortex_whisper.py
 ```
 
-The former `python ditado.py` entry point remains as a temporary compatibility alias.
-
 ## Build packages
 
 ```bash
 source venv/bin/activate
 python -m pip install -r requirements-dev.txt
+
+# On Ubuntu 24.04 or 26.04 only
 PYTHON_BIN=venv/bin/python scripts/build_linux.sh
-sudo apt install ./dist/cortex-whisper_0.1.0_amd64.deb
+
+# Requires Flatpak Builder, KDE SDK 6.11, and PySide BaseApp 6.11
+scripts/build_flatpak.sh
 ```
 
-The script always produces the `.deb`. When `appimagetool` is also installed it
-creates `dist/Cortex-Whisper-0.1.0-x86_64.AppImage`, and it writes a
-`dist/SHA256SUMS` covering both artifacts.
-
-On Windows, install Inno Setup and run `scripts\build_windows.ps1` from PowerShell.
+The Flatpak dependency manifest contains immutable URLs and SHA-256 hashes. The
+CI builds each `.deb` in its matching Ubuntu container. On Windows, install Inno
+Setup and run `scripts\build_windows.ps1`.
 
 ## Development
 
 ```bash
-python -m pip install -r requirements-dev.txt
 python -m ruff check .
 python -m pytest
-python -m compileall -q cortex_whisper.py cortex_shortcut_portal.py src
+python -m compileall -q cortex_whisper.py src
 ```
 
-Source layout:
-
-| Path | Contents |
-| --- | --- |
-| `src/cortex_whisper/` | Application package: audio capture, transcription, hotkeys, desktop integration |
-| `src/cortex_whisper/ui/` | Qt overlay and settings window |
-| `packaging/` | PyInstaller spec, Debian metadata, Inno Setup script |
-| `scripts/` | Linux and Windows build scripts |
-| `docs/` | Landing page published with GitHub Pages |
-
-The `build` workflow runs on `v*` tags and on manual dispatch. It builds the
-Linux and Windows artifacts and attaches them to the workflow run; publishing a
-GitHub Release is still a manual step.
+The `CI and release` workflow runs tests on every push and pull request. Manual
+runs and `v*` tags also build Flatpak, Ubuntu 24.04/26.04 `.deb` packages, and
+the experimental Windows installer. A tag creates a GitHub pre-release.
 
 ## Known limitations
 
-- Wayland global shortcuts currently depend on GNOME's Global Shortcuts portal.
-- Automatic paste on Wayland requires a working `ydotool` user service.
-- Wayland prevents normal applications from reading global pointer coordinates,
-  so the overlay is centered rather than attached to the pointer.
-- Windows packaging has not been validated on a physical Windows machine.
-- macOS hotkeys, paste integration, packaging, and startup are not implemented.
+- GNOME/Wayland is the primary tested desktop.
+- Automatic paste on Wayland requires a working host ydotool service.
+- CUDA inside Flatpak is best effort; CPU is the supported baseline.
+- Linux release artifacts currently target x86_64 only.
+- Windows packaging remains experimental; macOS is not implemented.
 
-See the [release checklist](RELEASE_CHECKLIST.md) for the full launch roadmap.
+See the [release checklist](RELEASE_CHECKLIST.md) for the remaining publication
+work.
 
-## Contributing
+## Contributing and license
 
 Bug reports and focused pull requests are welcome. Include the operating system,
-desktop session, microphone, logs, and reproduction steps for integration issues.
-Run `ruff` and `pytest` before opening a pull request.
+desktop session, microphone, logs, and reproduction steps for integration bugs.
 
-## License
-
-Cortex Whisper is released under the [MIT License](LICENSE).
+Cortex Whisper is released under the [MIT License](LICENSE). Bundled components
+retain their own licenses; see [Third-Party Notices](THIRD_PARTY_NOTICES.md).
 
 Copyright (c) 2026 Matheus Fernandes da Silva.
-
-Bundled libraries retain their own licenses. See the
-[Third-Party Notices](THIRD_PARTY_NOTICES.md) for the audited dependency inventory
-and binary-distribution notes.

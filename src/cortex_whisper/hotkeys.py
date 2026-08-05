@@ -3,15 +3,24 @@
 from __future__ import annotations
 
 import os
-import shutil
-import subprocess
 import sys
 import threading
 from collections.abc import Callable
-from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
+from PySide6.QtDBus import QDBusObjectPath, QDBusVariant
+
+from .environment import is_flatpak
 from .metadata import APP_ID
+from .portals import (
+    REGISTRY_INTERFACE,
+    SESSION_INTERFACE,
+    SHORTCUTS_INTERFACE,
+    PortalConnection,
+    QtPortalConnection,
+    expected_request_path,
+    request_token,
+)
 
 
 class HotkeyBackend(Protocol):
@@ -19,20 +28,6 @@ class HotkeyBackend(Protocol):
 
     def start(self) -> None: ...
     def stop(self) -> None: ...
-
-
-def system_process_environment() -> dict[str, str]:
-    """Return an environment safe for host executables launched by PyInstaller."""
-    environment = os.environ.copy()
-    original_library_path = environment.pop("LD_LIBRARY_PATH_ORIG", None)
-    if original_library_path is None:
-        environment.pop("LD_LIBRARY_PATH", None)
-    else:
-        environment["LD_LIBRARY_PATH"] = original_library_path
-    if environment.pop("CORTEX_WHISPER_APPIMAGE_GIO_ISOLATED", None):
-        for variable in ("GIO_MODULE_DIR", "GIO_USE_VFS", "GSETTINGS_BACKEND"):
-            environment.pop(variable, None)
-    return environment
 
 
 def pynput_key(name: str):
@@ -86,21 +81,9 @@ class PynputHotkey:
             self.listener = None
 
 
-def portal_helper_path() -> Path:
-    candidates = []
-    if getattr(sys, "_MEIPASS", None):
-        candidates.append(Path(sys._MEIPASS) / "cortex_shortcut_portal.py")
-    candidates.extend(
-        [
-            Path(__file__).resolve().parents[2] / "cortex_shortcut_portal.py",
-            Path.cwd() / "cortex_shortcut_portal.py",
-        ]
-    )
-    return next((path for path in candidates if path.exists()), candidates[0])
-
-
 class PortalHotkey:
     name = "xdg-desktop-portal"
+    shortcut_id = "cortex_whisper_hold_to_talk"
 
     def __init__(
         self,
@@ -108,61 +91,96 @@ class PortalHotkey:
         on_press: Callable[[], None],
         on_release: Callable[[], None],
         on_error: Callable[[str], None],
+        connection: PortalConnection | None = None,
     ) -> None:
         self.key_name = key_name
         self.on_press = on_press
         self.on_release = on_release
         self.on_error = on_error
-        self.process: subprocess.Popen[str] | None = None
-        self.thread: threading.Thread | None = None
+        self.connection = connection
+        self.session_handle: str | None = None
+        self.started = False
 
     def start(self) -> None:
-        helper = portal_helper_path()
-        python = shutil.which("python3", path="/usr/bin:/bin")
-        if not helper.exists() or not python:
-            raise RuntimeError("the portal helper or system Python could not be found")
-        self.process = subprocess.Popen(
-            [
-                python,
-                "-u",
-                str(helper),
-                "--trigger",
-                self.key_name,
-                "--app-id",
-                APP_ID,
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,
-            env=system_process_environment(),
-        )
-        self.thread = threading.Thread(target=self._read, name="portal-hotkey", daemon=True)
-        self.thread.start()
+        try:
+            self.connection = self.connection or QtPortalConnection()
+            if not is_flatpak():
+                self.connection.call(
+                    REGISTRY_INTERFACE,
+                    "Register",
+                    [APP_ID, {}],
+                )
+            self.connection.subscribe_shortcuts(self._activated, self._deactivated)
+            token = request_token("create")
+            session_token = request_token("session")
+            path = expected_request_path(self.connection, token)
+            self.connection.subscribe_response(path, self._session_created)
+            options = {
+                "handle_token": QDBusVariant(token),
+                "session_handle_token": QDBusVariant(session_token),
+            }
+            self.connection.call(SHORTCUTS_INTERFACE, "CreateSession", [options])
+            self.started = True
+        except Exception as exc:
+            self._fail(str(exc))
 
-    def _read(self) -> None:
-        assert self.process is not None and self.process.stdout is not None
-        unexpected_output: list[str] = []
-        reported_error = False
-        for raw in self.process.stdout:
-            line = raw.strip()
-            if line == "PRESS":
-                self.on_press()
-            elif line == "RELEASE":
-                self.on_release()
-            elif line.startswith("ERROR:"):
-                self.on_error(line.removeprefix("ERROR:").strip())
-                reported_error = True
-            elif line:
-                unexpected_output.append(line)
-        if self.process.poll() not in {0, None} and not reported_error:
-            detail = unexpected_output[-1] if unexpected_output else "no error details were reported"
-            self.on_error(f"the global hotkey service stopped unexpectedly: {detail}")
+    def _session_created(self, response: int, results: dict[str, Any]) -> None:
+        if response != 0:
+            self._fail(f"session creation was denied (code {response})")
+            return
+        handle = results.get("session_handle")
+        self.session_handle = handle.path() if isinstance(handle, QDBusObjectPath) else str(handle or "")
+        if not self.session_handle:
+            self._fail("the portal returned no shortcut session")
+            return
+        assert self.connection is not None
+        token = request_token("bind")
+        path = expected_request_path(self.connection, token)
+        self.connection.subscribe_response(path, self._shortcut_bound)
+        properties = {
+            "description": QDBusVariant("Hold to dictate"),
+            "preferred_trigger": QDBusVariant(self.key_name),
+        }
+        shortcuts = [(self.shortcut_id, properties)]
+        options = {"handle_token": QDBusVariant(token)}
+        try:
+            self.connection.call(
+                SHORTCUTS_INTERFACE,
+                "BindShortcuts",
+                [QDBusObjectPath(self.session_handle), shortcuts, "", options],
+            )
+        except Exception as exc:
+            self._fail(str(exc))
+
+    def _shortcut_bound(self, response: int, results: dict[str, Any]) -> None:
+        if response != 0:
+            self._fail(f"shortcut {self.key_name} was denied (code {response})")
+            return
+        shortcuts = results.get("shortcuts", [])
+        if shortcuts and not any(str(shortcut[0]) == self.shortcut_id for shortcut in shortcuts):
+            self._fail("no shortcut was authorized")
+
+    def _activated(self, session_handle: str, shortcut_id: str) -> None:
+        if session_handle == self.session_handle and shortcut_id == self.shortcut_id:
+            self.on_press()
+
+    def _deactivated(self, session_handle: str, shortcut_id: str) -> None:
+        if session_handle == self.session_handle and shortcut_id == self.shortcut_id:
+            self.on_release()
+
+    def _fail(self, message: str) -> None:
+        self.on_error(message)
 
     def stop(self) -> None:
-        if self.process is not None and self.process.poll() is None:
-            self.process.terminate()
-        self.process = None
+        if self.connection and self.session_handle:
+            try:
+                self.connection.call(SESSION_INTERFACE, "Close", [], path=self.session_handle)
+            except Exception:
+                pass
+        if self.connection:
+            self.connection.clear()
+        self.session_handle = None
+        self.started = False
 
 
 def create_hotkey_backend(

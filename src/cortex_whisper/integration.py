@@ -7,8 +7,10 @@ import shlex
 import shutil
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
+from .environment import is_flatpak, ydotool_socket_path
 from .metadata import (
     APP_COMPACT_NAME,
     APP_DESCRIPTION,
@@ -17,6 +19,7 @@ from .metadata import (
     LEGACY_APP_ID,
     LEGACY_COMPACT_NAME,
 )
+from .portals import BackgroundPortal
 
 
 def launch_command() -> list[str]:
@@ -36,12 +39,14 @@ def command_string(command: list[str]) -> str:
 class SystemIntegration:
     def __init__(self) -> None:
         self.platform = "windows" if sys.platform == "win32" else "linux"
+        self.flatpak = self.platform == "linux" and is_flatpak()
+        self.background_portal: BackgroundPortal | None = None
 
     @property
     def paste_backend(self) -> str:
         if self.platform == "windows":
             return "Windows SendInput"
-        if shutil.which("ydotool"):
+        if shutil.which("ydotool") and (not self.flatpak or ydotool_socket_path().exists()):
             return "ydotool"
         if os.environ.get("XDG_SESSION_TYPE", "").casefold() != "wayland":
             return "pynput/X11"
@@ -55,7 +60,7 @@ class SystemIntegration:
         The controller still fills QClipboard first, so Windows and systems
         without these helpers retain the normal Qt fallback.
         """
-        if self.platform != "linux":
+        if self.platform != "linux" or self.flatpak:
             return True, "Qt clipboard"
 
         command: list[str] | None = None
@@ -91,9 +96,15 @@ class SystemIntegration:
         if self.platform == "linux" and os.environ.get("XDG_SESSION_TYPE", "").casefold() == "wayland":
             if not shutil.which("ydotool"):
                 return False, "ydotool is not installed; press Ctrl+V to paste"
+            socket = ydotool_socket_path()
+            if self.flatpak and not socket.exists():
+                return False, "ydotool service is not running; the text is copied, so press Ctrl+V"
             try:
+                environment = os.environ.copy()
+                environment["YDOTOOL_SOCKET"] = str(socket)
                 result = subprocess.run(
                     ["ydotool", "key", "29:1", "47:1", "47:0", "29:0"],
+                    env=environment,
                     capture_output=True,
                     text=True,
                     check=False,
@@ -117,10 +128,12 @@ class SystemIntegration:
     def ensure_application_entry(self) -> None:
         """Register the app ID required by the Wayland GlobalShortcuts portal.
 
-        Debian installs the entry system-wide. AppImage and source checkouts need
-        a per-user entry so GNOME can associate the portal request with this app.
+        Debian installs the entry system-wide. Source checkouts need a per-user
+        entry so GNOME can associate the portal request with this app.
         """
         if self.platform != "linux":
+            return
+        if self.flatpak:
             return
         system_entry = Path("/usr/share/applications") / f"{APP_ID}.desktop"
         legacy_user_entry = (
@@ -146,7 +159,15 @@ class SystemIntegration:
         user_entry.parent.mkdir(parents=True, exist_ok=True)
         user_entry.write_text(content, encoding="utf-8")
 
-    def set_autostart(self, enabled: bool) -> None:
+    def set_autostart(
+        self,
+        enabled: bool,
+        callback: Callable[[bool, str], None] | None = None,
+    ) -> None:
+        if self.flatpak:
+            self.background_portal = self.background_portal or BackgroundPortal()
+            self.background_portal.request(enabled, callback or (lambda _success, _error: None))
+            return
         if self.platform == "windows":
             import winreg
 
@@ -189,3 +210,8 @@ class SystemIntegration:
             encoding="utf-8",
         )
         legacy_desktop.unlink(missing_ok=True)
+
+    def close(self) -> None:
+        if self.background_portal:
+            self.background_portal.close()
+            self.background_portal = None

@@ -38,7 +38,7 @@
       "name": "Cortex Whisper",
       "applicationCategory": "UtilitiesApplication",
       "operatingSystem": "Linux",
-      "softwareVersion": "0.1.0",
+      "softwareVersion": "0.2.0",
       "url": "https://matheusz-nied.github.io/cortex-whisper/",
       "downloadUrl": "https://github.com/matheusz-nied/cortex-whisper/releases/latest",
       "description": "Ditado por voz com IA local baseado em faster-whisper. Segure F8, fale, solte — o texto é colado no app em foco. Sem nuvem e sem telemetria.",
@@ -699,7 +699,7 @@
     <div class="wrap">
       <div class="hero-grid">
         <div>
-          <div class="badge"><span class="dot"></span><span data-i18n="hero.badge">v0.1.0 BETA — LINUX</span></div>
+          <div class="badge"><span class="dot"></span><span data-i18n="hero.badge">v0.2.0 BETA — LINUX</span></div>
           <h1>
             <span data-i18n="hero.title1">Segure F8, fale, solte.</span><br>
             <span class="grad" id="hero-grad" data-i18n="hero.title2" data-text="O texto aparece onde você está.">O texto aparece onde você está.</span>
@@ -711,16 +711,16 @@
           </p>
 
           <div class="cta">
-            <a class="btn btn-primary" id="dl-deb" href="#download">
+            <a class="btn btn-primary" id="dl-flatpak" href="#download">
               <span>
-                <span data-i18n="hero.deb">Baixar .deb</span>
-                <small data-i18n="hero.debSub">Ubuntu / Debian · x86_64</small>
+                <span data-i18n="hero.flatpak">Baixar Flatpak</span>
+                <small data-i18n="hero.flatpakSub">Recomendado · Linux x86_64</small>
               </span>
             </a>
-            <a class="btn" id="dl-appimage" href="#download">
+            <a class="btn" id="dl-deb" href="#download">
               <span>
-                <span data-i18n="hero.appimage">Baixar AppImage</span>
-                <small data-i18n="hero.appimageSub">Qualquer distro · x86_64</small>
+                <span data-i18n="hero.deb">Baixar .deb</span>
+                <small data-i18n="hero.debSub">Ubuntu 24.04 / 26.04</small>
               </span>
             </a>
             <a class="btn" id="repo-link" href="https://github.com/matheusz-nied/cortex-whisper">
@@ -863,7 +863,7 @@
       <h2 data-i18n="plat.title">Status por plataforma</h2>
       <div class="callout">
         <p data-i18n="plat.callout">
-          A versão 0.1.0 Beta é validada apenas em Linux com GNOME/Wayland. O suporte a Windows é
+          A versão 0.2.0 Beta é validada apenas em Linux com GNOME/Wayland. O suporte a Windows é
           experimental e ainda não foi testado em hardware real. macOS não está implementado.
         </p>
       </div>
@@ -889,21 +889,21 @@
       <p class="eyebrow" data-i18n="inst.eyebrow">Instalação</p>
       <h2 data-i18n="inst.title">Colocando pra rodar no Linux</h2>
 
-      <h3 style="margin-top:28px" data-i18n="inst.deps">1. Dependências do sistema</h3>
+      <h3 style="margin-top:28px" data-i18n="inst.deps">1. Instale o Flatpak recomendado</h3>
       <p class="lede" data-i18n="inst.depsd">
-        Em sistemas baseados em Ubuntu e Debian. O <code>wl-copy</code> cuida da área de transferência
-        e o <code>ydotool</code> envia o Ctrl+V para o aplicativo em foco.
+        O bundle isola Qt, GLib, Python e o mecanismo de transcrição das bibliotecas do sistema.
       </p>
-<pre><code>sudo apt install libportaudio2 wl-clipboard ydotool python3-dbus python3-gi
+<pre><code>flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install --user ./Cortex-Whisper-0.2.0-x86_64.flatpak
+flatpak run io.github.matheusz_nied.CortexWhisper</code></pre>
+
+      <h3 style="margin-top:32px" data-i18n="inst.pkg">2. Ative a colagem automática</h3>
+<pre><code>sudo apt install ydotool
 systemctl --user enable --now ydotool.service</code></pre>
 
-      <h3 style="margin-top:32px" data-i18n="inst.pkg">2. Instale o pacote</h3>
-<pre data-pkg-deb><code><span class="cmt"># .deb</span>
-sudo apt install ./cortex-whisper_0.1.0_amd64.deb
-cortex-whisper</code></pre>
-<pre data-pkg-appimage><code><span class="cmt"># AppImage</span>
-chmod +x Cortex-Whisper-0.1.0-x86_64.AppImage
-./Cortex-Whisper-0.1.0-x86_64.AppImage</code></pre>
+      <p class="lede" data-i18n="inst.debd">
+        Alternativamente, instale o <code>.deb</code> que corresponde exatamente ao Ubuntu 24.04 ou 26.04.
+      </p>
 
       <p class="btn-note" data-i18n="inst.portal">
         No GNOME/Wayland, o sistema pede permissão para o atalho global na primeira execução.
@@ -930,22 +930,28 @@ cortex-whisper --microphone "ME6S"</code></pre>
   <section id="download">
     <div class="wrap">
       <p class="eyebrow" data-i18n="dl.eyebrow">Download</p>
-      <h2 data-i18n="dl.title">Cortex Whisper 0.1.0 Beta</h2>
+      <h2 data-i18n="dl.title">Cortex Whisper 0.2.0 Beta</h2>
       <p class="lede" data-i18n="dl.lede">
         Build para Linux x86_64. Os modelos Whisper não vêm embutidos — o modelo escolhido é
         baixado no primeiro uso e reaproveitado depois.
       </p>
       <div class="cta">
-        <a class="btn btn-primary" data-dl="deb" href="https://github.com/matheusz-nied/cortex-whisper/releases/latest">
+        <a class="btn btn-primary" data-dl="flatpak" href="https://github.com/matheusz-nied/cortex-whisper/releases/latest">
           <span>
-            <span data-i18n="dl.deb">cortex-whisper_0.1.0_amd64.deb</span>
-            <small data-i18n="dl.debSub">Ubuntu / Debian e derivados</small>
+            <span data-i18n="dl.flatpak">Cortex-Whisper-0.2.0-x86_64.flatpak</span>
+            <small data-i18n="dl.flatpakSub">Recomendado para Linux x86_64</small>
           </span>
         </a>
-        <a class="btn" data-dl="appimage" href="https://github.com/matheusz-nied/cortex-whisper/releases/latest">
+        <a class="btn" data-dl="deb24" href="https://github.com/matheusz-nied/cortex-whisper/releases/latest">
           <span>
-            <span data-i18n="dl.appimage">Cortex-Whisper-0.1.0-x86_64.AppImage</span>
-            <small data-i18n="dl.appimageSub">Portátil, qualquer distribuição</small>
+            <span data-i18n="dl.deb24">.deb Ubuntu 24.04</span>
+            <small data-i18n="dl.deb24Sub">Somente Ubuntu 24.04</small>
+          </span>
+        </a>
+        <a class="btn" data-dl="deb26" href="https://github.com/matheusz-nied/cortex-whisper/releases/latest">
+          <span>
+            <span data-i18n="dl.deb26">.deb Ubuntu 26.04</span>
+            <small data-i18n="dl.deb26Sub">Somente Ubuntu 26.04</small>
           </span>
         </a>
       </div>
@@ -993,16 +999,18 @@ cortex-whisper --microphone "ME6S"</code></pre>
 <script>
 (function () {
   var REPO    = "https://github.com/matheusz-nied/cortex-whisper";
-  var TAG     = "v0.1.0";
-  var DEB     = "cortex-whisper_0.1.0_amd64.deb";
-  var APPIMG  = "Cortex-Whisper-0.1.0-x86_64.AppImage";
+  var TAG     = "v0.2.0";
+  var FLATPAK = "Cortex-Whisper-0.2.0-x86_64.flatpak";
+  var DEB24   = "cortex-whisper_0.2.0-1_ubuntu24.04_amd64.deb";
+  var DEB26   = "cortex-whisper_0.2.0-1_ubuntu26.04_amd64.deb";
   var ASSET   = REPO + "/releases/download/" + TAG + "/";
 
   // Point every download control at the released asset.
-  document.getElementById("dl-deb").href = ASSET + DEB;
-  document.getElementById("dl-appimage").href = ASSET + APPIMG;
-  document.querySelector('[data-dl="deb"]').href = ASSET + DEB;
-  document.querySelector('[data-dl="appimage"]').href = ASSET + APPIMG;
+  document.getElementById("dl-flatpak").href = ASSET + FLATPAK;
+  document.getElementById("dl-deb").href = "#download";
+  document.querySelector('[data-dl="flatpak"]').href = ASSET + FLATPAK;
+  document.querySelector('[data-dl="deb24"]').href = ASSET + DEB24;
+  document.querySelector('[data-dl="deb26"]').href = ASSET + DEB26;
 
   var STR = {
     pt: {}, // pt-BR is authored directly in the markup; empty means "restore original"
@@ -1010,12 +1018,12 @@ cortex-whisper --microphone "ME6S"</code></pre>
       "nav.how":"How it works", "nav.features":"Features", "nav.privacy":"Privacy",
       "nav.install":"Install", "nav.download":"Download",
 
-      "hero.badge":"v0.1.0 BETA — LINUX",
+      "hero.badge":"v0.2.0 BETA — LINUX",
       "hero.title1":"Hold F8, speak, release.",
       "hero.title2":"The text lands right where you are.",
       "hero.lede":"AI voice dictation that runs entirely on your machine. Cortex Whisper records, transcribes locally with <code>faster-whisper</code>, and pastes the result into the app that already has focus. No audio ever leaves your computer.",
-      "hero.deb":"Download .deb", "hero.debSub":"Ubuntu / Debian · x86_64",
-      "hero.appimage":"Download AppImage", "hero.appimageSub":"Any distro · x86_64",
+      "hero.flatpak":"Download Flatpak", "hero.flatpakSub":"Recommended · Linux x86_64",
+      "hero.deb":"Download .deb", "hero.debSub":"Ubuntu 24.04 / 26.04",
       "hero.source":"Source code",
       "hero.note":"Free and open source under the MIT license. No account, no subscription, no telemetry.",
       "hero.shot1":"Recording", "hero.shot2":"Transcribing", "hero.shot3":"Pasted",
@@ -1052,7 +1060,7 @@ cortex-whisper --microphone "ME6S"</code></pre>
       "priv.r1":"Configuration", "priv.r2":"Logs", "priv.r3":"Models", "priv.r3v":"Hugging Face user cache",
 
       "plat.eyebrow":"Compatibility", "plat.title":"Platform status",
-      "plat.callout":"Version 0.1.0 Beta is validated only on Linux with GNOME/Wayland. Windows support is experimental and has not been tested on real hardware. macOS is not implemented yet.",
+      "plat.callout":"Version 0.2.0 Beta is validated only on Linux with GNOME/Wayland. Windows support is experimental and has not been tested on real hardware. macOS is not implemented yet.",
       "plat.th1":"Platform", "plat.th2":"Status", "plat.th3":"Notes",
       "plat.p1":"Tested", "plat.n1":"Primary development platform",
       "plat.p2":"Implemented", "plat.n2":"Needs broader testing",
@@ -1060,17 +1068,19 @@ cortex-whisper --microphone "ME6S"</code></pre>
       "plat.p4":"Not supported", "plat.n4":"Platform integration has not been implemented",
 
       "inst.eyebrow":"Install", "inst.title":"Getting it running on Linux",
-      "inst.deps":"1. System dependencies",
-      "inst.depsd":"On Ubuntu and Debian-based systems. <code>wl-copy</code> provides the clipboard and <code>ydotool</code> sends Ctrl+V to the focused app.",
-      "inst.pkg":"2. Install the package",
+      "inst.deps":"1. Install the recommended Flatpak",
+      "inst.depsd":"The bundle isolates Qt, GLib, Python, and the transcription engine from system libraries.",
+      "inst.pkg":"2. Enable automatic paste",
+      "inst.debd":"Alternatively, install the <code>.deb</code> that exactly matches Ubuntu 24.04 or 26.04.",
       "inst.portal":"On GNOME/Wayland, the system asks for global-shortcut permission on first launch.",
       "inst.src":"Run from source", "inst.srcd":"Python 3.10 or newer is required.",
       "inst.cli":"Command line",
 
-      "dl.eyebrow":"Download", "dl.title":"Cortex Whisper 0.1.0 Beta",
+      "dl.eyebrow":"Download", "dl.title":"Cortex Whisper 0.2.0 Beta",
       "dl.lede":"Linux x86_64 build. Whisper models are not bundled — the selected model is downloaded on first use and reused afterward.",
-      "dl.deb":"cortex-whisper_0.1.0_amd64.deb", "dl.debSub":"Ubuntu / Debian and derivatives",
-      "dl.appimage":"Cortex-Whisper-0.1.0-x86_64.AppImage", "dl.appimageSub":"Portable, any distribution",
+      "dl.flatpak":"Cortex-Whisper-0.2.0-x86_64.flatpak", "dl.flatpakSub":"Recommended for Linux x86_64",
+      "dl.deb24":".deb Ubuntu 24.04", "dl.deb24Sub":"Ubuntu 24.04 only",
+      "dl.deb26":".deb Ubuntu 26.04", "dl.deb26Sub":"Ubuntu 26.04 only",
       "dl.note":"Verify the hashes in the <code>SHA256SUMS</code> file published alongside the release. Every version stays available on the <a href=\"https://github.com/matheusz-nied/cortex-whisper/releases\">releases page</a>.",
 
       "faq.eyebrow":"FAQ", "faq.title":"Before you install",

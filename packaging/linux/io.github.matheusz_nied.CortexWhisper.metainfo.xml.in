@@ -25,9 +25,9 @@
     <name>Matheus Fernandes da Silva</name>
   </developer>
   <releases>
-    <release version="@VERSION@" date="2026-07-27" type="development">
+    <release version="@VERSION@" date="2026-08-05" type="development">
       <description>
-        <p>Initial public beta for Linux.</p>
+        <p>Flatpak beta with isolated desktop libraries and native Qt portal integration.</p>
       </description>
     </release>
   </releases>

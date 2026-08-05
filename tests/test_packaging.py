@@ -66,18 +66,14 @@ def test_linux_bundle_uses_host_glib_libraries(tmp_path):
     assert unrelated.exists()
 
 
-def test_linux_launchers_isolate_host_gio_modules():
+def test_debian_launcher_isolates_host_gio_modules():
     project_root = Path(__file__).resolve().parent.parent
-    launchers = (
-        project_root / "packaging" / "linux" / "AppRun",
-        project_root / "packaging" / "linux" / "cortex-whisper-launcher",
-    )
+    launcher = project_root / "packaging" / "linux" / "cortex-whisper-launcher"
 
-    for launcher in launchers:
-        content = launcher.read_text(encoding="utf-8")
-        assert "GIO_MODULE_DIR=" in content
-        assert "GIO_USE_VFS=local" in content
-        assert "GSETTINGS_BACKEND=memory" in content
+    content = launcher.read_text(encoding="utf-8")
+    assert "GIO_MODULE_DIR=" in content
+    assert "GIO_USE_VFS=local" in content
+    assert "GSETTINGS_BACKEND=memory" in content
 
 
 def test_frozen_pyav_stub_supports_import_but_rejects_file_api():
@@ -100,6 +96,21 @@ def test_frozen_pyav_stub_supports_import_but_rejects_file_api():
         sys.modules.pop("av", None)
         if previous is not None:
             sys.modules["av"] = previous
+
+
+def test_flatpak_replaces_pyav_with_compatibility_stub():
+    project_root = Path(__file__).resolve().parent.parent
+    manifest = (project_root / "io.github.matheusz_nied.CortexWhisper.yml").read_text(
+        encoding="utf-8"
+    )
+    stub = project_root / "packaging" / "flatpak" / "av_stub.py"
+
+    assert "rm -rf /app/lib/python3.13/site-packages/av" in manifest
+    assert "install -Dm644 packaging/flatpak/av_stub.py" in manifest
+    assert "PyAV is intentionally excluded" in stub.read_text(encoding="utf-8")
+    assert "THIRD_PARTY_NOTICES.md" in manifest
+    assert "/app/share/licenses/portaudio/LICENSE" in manifest
+    assert "/app/share/licenses/ydotool/LICENSE" in manifest
 
 
 def test_native_inventory_extracts_binary_entries_recursively():

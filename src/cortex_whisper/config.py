@@ -10,10 +10,11 @@ from pathlib import Path
 
 from platformdirs import user_config_dir, user_log_dir
 
+from .environment import is_flatpak
 from .metadata import APP_COMPACT_NAME, LEGACY_COMPACT_NAME
 
 APP_NAME = APP_COMPACT_NAME
-CONFIG_VERSION = 2
+CONFIG_VERSION = 3
 
 
 @dataclass(slots=True)
@@ -23,6 +24,7 @@ class AppConfig:
     microphone: str = "ME6S"
     hotkey: str = "F8"
     autostart: bool = True
+    autostart_portal_configured: bool = False
     overlay_position: str = "screen_center"
     language: str = "pt"
 
@@ -43,9 +45,15 @@ class ConfigStore:
         self.path = path or Path(user_config_dir(APP_NAME, appauthor=False)) / "config.json"
         self.legacy_path = legacy_path
         if path is None and legacy_path is None:
-            self.legacy_path = (
-                Path(user_config_dir(LEGACY_COMPACT_NAME, LEGACY_COMPACT_NAME)) / "config.json"
-            )
+            if is_flatpak():
+                # The sandbox has its own XDG_CONFIG_HOME. This narrowly exposed
+                # host path lets the first Flatpak run import preferences without
+                # granting access to Whisper model caches or the rest of $HOME.
+                self.legacy_path = Path.home() / ".config" / APP_NAME / "config.json"
+            else:
+                self.legacy_path = (
+                    Path(user_config_dir(LEGACY_COMPACT_NAME, LEGACY_COMPACT_NAME)) / "config.json"
+                )
 
     def load(self) -> AppConfig:
         source = self.path

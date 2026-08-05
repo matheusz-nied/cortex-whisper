@@ -1,0 +1,93 @@
+id: io.github.matheusz_nied.CortexWhisper
+runtime: org.kde.Platform
+runtime-version: "6.11"
+sdk: org.kde.Sdk
+base: io.qt.PySide.BaseApp
+base-version: "6.11"
+command: cortex-whisper
+
+build-options:
+  env:
+    BASEAPP_REMOVE_WEBENGINE: "1"
+
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --socket=pulseaudio
+  - --device=dri
+  - --filesystem=xdg-run/.ydotool_socket
+  - --filesystem=~/.config/CortexWhisper:ro
+
+cleanup:
+  - /include
+  - /lib/cmake
+  - /lib/pkgconfig
+  - /share/man
+
+cleanup-commands:
+  - /app/cleanup-BaseApp.sh
+
+modules:
+  - name: portaudio
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+      - -DPA_BUILD_SHARED=ON
+      - -DPA_BUILD_STATIC=OFF
+      - -DPA_BUILD_EXAMPLES=OFF
+      - -DPA_BUILD_TESTS=OFF
+      - -DPA_USE_JACK=OFF
+    post-install:
+      - install -Dm644 LICENSE.txt /app/share/licenses/portaudio/LICENSE
+    sources:
+      - type: archive
+        url: https://github.com/PortAudio/portaudio/archive/refs/tags/v19.7.0.tar.gz
+        sha256: 5af29ba58bbdbb7bbcefaaecc77ec8fc413f0db6f4c4e286c40c3e1b83174fa0
+
+  - name: ydotool-client
+    buildsystem: simple
+    build-commands:
+      - >-
+        cc -O2 -DVERSION=\"1.0.4\" -o ydotool
+        Client/ydotool.c Client/tool_click.c Client/tool_mousemove.c
+        Client/tool_type.c Client/tool_key.c
+      - install -Dm755 ydotool /app/bin/ydotool
+      - install -Dm644 LICENSE /app/share/licenses/ydotool/LICENSE
+    sources:
+      - type: archive
+        url: https://github.com/ReimuNotMoe/ydotool/archive/refs/tags/v1.0.4.tar.gz
+        sha256: ba075a43aa6ead51940e892ecffa4d0b8b40c241e4e2bc4bd9bd26b61fde23bd
+
+  - packaging/flatpak/python3-dependencies.json
+
+  - name: cortex-whisper
+    buildsystem: simple
+    build-commands:
+      - rm -rf /app/lib/python3.13/site-packages/av /app/lib/python3.13/site-packages/av.libs /app/lib/python3.13/site-packages/av-*.dist-info /app/bin/pyav
+      - install -Dm644 packaging/flatpak/av_stub.py /app/lib/python3.13/site-packages/av.py
+      - pip3 install --prefix=/app --no-deps --no-build-isolation .
+      - install -Dm644 io.github.matheusz_nied.CortexWhisper.desktop /app/share/applications/io.github.matheusz_nied.CortexWhisper.desktop
+      - install -Dm644 assets/cortex-whisper.svg /app/share/icons/hicolor/scalable/apps/io.github.matheusz_nied.CortexWhisper.svg
+      - >-
+        sed 's/@VERSION@/0.2.0/g'
+        packaging/linux/io.github.matheusz_nied.CortexWhisper.metainfo.xml.in
+        > io.github.matheusz_nied.CortexWhisper.metainfo.xml
+      - install -Dm644 io.github.matheusz_nied.CortexWhisper.metainfo.xml /app/share/metainfo/io.github.matheusz_nied.CortexWhisper.metainfo.xml
+      - install -Dm644 LICENSE /app/share/licenses/io.github.matheusz_nied.CortexWhisper/LICENSE
+      - install -Dm644 THIRD_PARTY_NOTICES.md /app/share/doc/cortex-whisper/THIRD_PARTY_NOTICES.md
+    sources:
+      - type: dir
+        path: .
+        skip:
+          - .git
+          - .agents
+          - .codex
+          - .flatpak-builder
+          - build
+          - dist
+          - venv
+          - __pycache__
+          - .pytest_cache
+          - .ruff_cache

@@ -6,7 +6,6 @@ __pycache__/
 .ruff_cache/
 build/
 dist/
+.flatpak-builder/
 *.egg-info/
-*.AppImage
 *.deb
-

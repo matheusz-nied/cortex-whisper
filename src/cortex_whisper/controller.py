@@ -65,7 +65,10 @@ class Controller(QObject):
     def start(self) -> None:
         try:
             self.integration.ensure_application_entry()
-            self.integration.set_autostart(self.config.autostart)
+            if not self.integration.flatpak:
+                self.integration.set_autostart(self.config.autostart)
+            elif not self.config.autostart_portal_configured:
+                self.integration.set_autostart(self.config.autostart, self._autostart_completed)
         except Exception as exc:
             LOGGER.warning("Could not integrate the application with the operating system: %s", exc)
         self._start_hotkey()
@@ -209,7 +212,12 @@ class Controller(QObject):
         self.store.save(self.config)
         if old_autostart != self.config.autostart:
             try:
-                self.integration.set_autostart(self.config.autostart)
+                if self.integration.flatpak:
+                    self.config.autostart_portal_configured = False
+                    self.store.save(self.config)
+                    self.integration.set_autostart(self.config.autostart, self._autostart_completed)
+                else:
+                    self.integration.set_autostart(self.config.autostart)
             except Exception as exc:
                 self.notification.emit("Automatic startup", str(exc))
         if old_hotkey != self.config.hotkey:
@@ -230,5 +238,18 @@ class Controller(QObject):
         LOGGER.info("Stopping the microphone, global hotkey, and Whisper tasks")
         if self.hotkey:
             self.hotkey.stop()
+        self.integration.close()
         self.recorder.close()
         self.executor.shutdown(wait=False, cancel_futures=True)
+
+    def _autostart_completed(self, success: bool, error: str) -> None:
+        if success:
+            self.config.autostart_portal_configured = True
+            self.store.save(self.config)
+            return
+        if self.config.autostart:
+            self.config.autostart = False
+        self.config.autostart_portal_configured = True
+        self.store.save(self.config)
+        LOGGER.warning("Automatic startup portal: %s", error)
+        self.notification.emit("Automatic startup", error)

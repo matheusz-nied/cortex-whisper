@@ -7,9 +7,11 @@ from cortex_whisper.config import AppConfig, ConfigStore
 
 def test_defaults_are_product_defaults(tmp_path):
     config = ConfigStore(tmp_path / "config.json").load()
+    assert config.version == 3
     assert config.model == "small"
     assert config.hotkey == "F8"
     assert config.autostart is True
+    assert config.autostart_portal_configured is False
     assert config.overlay_position == "screen_center"
 
 

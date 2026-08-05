@@ -5,6 +5,6 @@
 export GIO_MODULE_DIR=/opt/cortex-whisper/_internal/gio-modules
 export GIO_USE_VFS=local
 export GSETTINGS_BACKEND=memory
-export CORTEX_WHISPER_APPIMAGE_GIO_ISOLATED=1
+export CORTEX_WHISPER_GIO_ISOLATED=1
 
 exec /opt/cortex-whisper/cortex-whisper "$@"

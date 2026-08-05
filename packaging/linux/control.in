@@ -1,11 +1,11 @@
 Package: cortex-whisper
-Version: @VERSION@
+Version: @PACKAGE_VERSION@
 Section: utils
 Priority: optional
 Architecture: amd64
 Maintainer: Matheus Fernandes da Silva <matheusz.nied@gmail.com>
 Homepage: https://github.com/matheusz-nied/cortex-whisper
-Depends: libportaudio2, libxcb-cursor0, libxcb-icccm4, libxcb-image0, libxcb-keysyms1, libxcb-render-util0, python3, python3-dbus, python3-gi
+Depends: libportaudio2, libxcb-cursor0, libxcb-icccm4, libxcb-image0, libxcb-keysyms1, libxcb-render-util0
 Recommends: ydotool, wl-clipboard
 Conflicts: whisper-ditado
 Replaces: whisper-ditado
