@@ -71,7 +71,7 @@ jobs:
         run: |
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y \
-            appstream build-essential ca-certificates curl git libportaudio2
+            appstream build-essential ca-certificates curl git libportaudio2 zstd
 
       - name: Check out source
         uses: actions/checkout@v6
@@ -80,10 +80,18 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-          cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            requirements-dev.txt
+
+      # setup-python's built-in pip cache runs the tool-cache `pip` wrapper,
+      # whose shebang points at the host path (/opt/hostedtoolcache) that is
+      # not mounted inside the container, so it fails with ENOENT. Caching the
+      # downloads directly keeps the speed without touching that wrapper.
+      - name: Cache pip downloads
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pip
+          key: pip-ubuntu${{ matrix.ubuntu }}-py3.13-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
+          restore-keys: |
+            pip-ubuntu${{ matrix.ubuntu }}-py3.13-
 
       - name: Install Python dependencies
         run: python -m pip install -r requirements-dev.txt
