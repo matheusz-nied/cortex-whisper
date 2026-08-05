@@ -40,7 +40,7 @@
       "operatingSystem": "Linux",
       "softwareVersion": "0.2.0",
       "url": "https://matheusz-nied.github.io/cortex-whisper/",
-      "downloadUrl": "https://github.com/matheusz-nied/cortex-whisper/releases/latest",
+      "downloadUrl": "https://github.com/matheusz-nied/cortex-whisper/archive/refs/heads/main.zip",
       "description": "Ditado por voz com IA local baseado em faster-whisper. Segure F8, fale, solte — o texto é colado no app em foco. Sem nuvem e sem telemetria.",
       "license": "https://opensource.org/licenses/MIT",
       "isAccessibleForFree": true,
@@ -711,20 +711,20 @@
           </p>
 
           <div class="cta">
-            <a class="btn btn-primary" id="dl-flatpak" href="#download">
+            <a class="btn btn-primary" id="install-source" href="#install">
               <span>
-                <span data-i18n="hero.flatpak">Baixar Flatpak</span>
-                <small data-i18n="hero.flatpakSub">Recomendado · Linux x86_64</small>
-              </span>
-            </a>
-            <a class="btn" id="dl-deb" href="#download">
-              <span>
-                <span data-i18n="hero.deb">Baixar .deb</span>
-                <small data-i18n="hero.debSub">Ubuntu 24.04 / 26.04</small>
+                <span data-i18n="hero.install">Instalar pelo código</span>
+                <small data-i18n="hero.installSub">Método recomendado · Linux</small>
               </span>
             </a>
             <a class="btn" id="repo-link" href="https://github.com/matheusz-nied/cortex-whisper">
-              <span data-i18n="hero.source">Código-fonte</span>
+              <span>
+                <span data-i18n="hero.source">Código-fonte</span>
+                <small>GitHub</small>
+              </span>
+            </a>
+            <a class="btn" href="#download">
+              <span data-i18n="hero.packages">Pacotes experimentais</span>
             </a>
           </div>
           <p class="btn-note" data-i18n="hero.note">
@@ -863,8 +863,8 @@
       <h2 data-i18n="plat.title">Status por plataforma</h2>
       <div class="callout">
         <p data-i18n="plat.callout">
-          A versão 0.2.0 Beta é validada apenas em Linux com GNOME/Wayland. O suporte a Windows é
-          experimental e ainda não foi testado em hardware real. macOS não está implementado.
+          A versão 0.2.0 Beta é desenvolvida para Linux com GNOME/Wayland. Atualmente recomendamos
+          executar pelo código-fonte; Flatpak, .deb e Windows continuam experimentais. macOS não está implementado.
         </p>
       </div>
       <div class="tablewrap">
@@ -889,40 +889,40 @@
       <p class="eyebrow" data-i18n="inst.eyebrow">Instalação</p>
       <h2 data-i18n="inst.title">Colocando pra rodar no Linux</h2>
 
-      <h3 style="margin-top:28px" data-i18n="inst.deps">1. Instale o Flatpak recomendado</h3>
+      <h3 style="margin-top:28px" data-i18n="inst.deps">1. Baixe e execute o código — recomendado</h3>
       <p class="lede" data-i18n="inst.depsd">
-        O bundle isola Qt, GLib, Python e o mecanismo de transcrição das bibliotecas do sistema.
+        Esta é atualmente a forma mais estável de testar o Cortex Whisper. Requer Python 3.10 ou mais recente.
       </p>
-<pre><code>flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak install --user ./Cortex-Whisper-0.2.0-x86_64.flatpak
-flatpak run io.github.matheusz_nied.CortexWhisper</code></pre>
+<pre><code>git clone https://github.com/matheusz-nied/cortex-whisper.git
+cd cortex-whisper
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install -r requirements.txt
+python cortex_whisper.py</code></pre>
 
       <h3 style="margin-top:32px" data-i18n="inst.pkg">2. Ative a colagem automática</h3>
 <pre><code>sudo apt install ydotool
 systemctl --user enable --now ydotool.service</code></pre>
 
       <p class="lede" data-i18n="inst.debd">
-        Alternativamente, instale o <code>.deb</code> que corresponde exatamente ao Ubuntu 24.04 ou 26.04.
+        Nas configurações, mantenha <strong>Start minimized with the system</strong> ativado e clique em <strong>Save</strong>.
+        O app criará a entrada de autostart do seu usuário.
       </p>
+
+<pre><code>grep '^Exec=' ~/.config/autostart/io.github.matheusz_nied.CortexWhisper.desktop</code></pre>
 
       <p class="btn-note" data-i18n="inst.portal">
-        No GNOME/Wayland, o sistema pede permissão para o atalho global na primeira execução.
+        O app inicia automaticamente depois que você entra na sua conta. Não mova o repositório nem o <code>venv</code>, pois o autostart aponta para esses caminhos.
       </p>
 
-      <h3 style="margin-top:32px" data-i18n="inst.src">Rodar a partir do código-fonte</h3>
-      <p class="lede" data-i18n="inst.srcd">Requer Python 3.10 ou mais recente.</p>
-<pre><code>git clone https://github.com/matheusz-nied/cortex-whisper.git
-cd cortex-whisper
-python3 -m venv venv &amp;&amp; source venv/bin/activate
-python -m pip install -r requirements.txt
-python cortex_whisper.py</code></pre>
+      <h3 style="margin-top:32px" data-i18n="inst.src">3. Pacotes em desenvolvimento</h3>
+      <p class="lede" data-i18n="inst.srcd">Flatpak e <code>.deb</code> ainda têm problemas de integração com áudio e portais do desktop. Use-os somente para testes.</p>
 
       <h3 style="margin-top:32px" data-i18n="inst.cli">Linha de comando</h3>
-<pre><code>cortex-whisper --help
-cortex-whisper --list-microphones
-cortex-whisper --diagnostics
-cortex-whisper --no-gui --model medium
-cortex-whisper --microphone "ME6S"</code></pre>
+<pre><code>./venv/bin/python cortex_whisper.py --help
+./venv/bin/python cortex_whisper.py --list-microphones
+./venv/bin/python cortex_whisper.py --diagnostics
+./venv/bin/python cortex_whisper.py --no-gui --model medium</code></pre>
     </div>
   </section>
 
@@ -932,26 +932,25 @@ cortex-whisper --microphone "ME6S"</code></pre>
       <p class="eyebrow" data-i18n="dl.eyebrow">Download</p>
       <h2 data-i18n="dl.title">Cortex Whisper 0.2.0 Beta</h2>
       <p class="lede" data-i18n="dl.lede">
-        Build para Linux x86_64. Os modelos Whisper não vêm embutidos — o modelo escolhido é
-        baixado no primeiro uso e reaproveitado depois.
+        Estes pacotes são prévias para desenvolvimento e testes. Para uso normal, instale pelo código-fonte seguindo as instruções acima.
       </p>
       <div class="cta">
-        <a class="btn btn-primary" data-dl="flatpak" href="https://github.com/matheusz-nied/cortex-whisper/releases/latest">
+        <a class="btn" data-dl="flatpak" href="https://github.com/matheusz-nied/cortex-whisper/releases/latest">
           <span>
             <span data-i18n="dl.flatpak">Cortex-Whisper-0.2.0-x86_64.flatpak</span>
-            <small data-i18n="dl.flatpakSub">Recomendado para Linux x86_64</small>
+            <small data-i18n="dl.flatpakSub">Experimental · Linux x86_64</small>
           </span>
         </a>
         <a class="btn" data-dl="deb24" href="https://github.com/matheusz-nied/cortex-whisper/releases/latest">
           <span>
             <span data-i18n="dl.deb24">.deb Ubuntu 24.04</span>
-            <small data-i18n="dl.deb24Sub">Somente Ubuntu 24.04</small>
+            <small data-i18n="dl.deb24Sub">Experimental · somente Ubuntu 24.04</small>
           </span>
         </a>
         <a class="btn" data-dl="deb26" href="https://github.com/matheusz-nied/cortex-whisper/releases/latest">
           <span>
             <span data-i18n="dl.deb26">.deb Ubuntu 26.04</span>
-            <small data-i18n="dl.deb26Sub">Somente Ubuntu 26.04</small>
+            <small data-i18n="dl.deb26Sub">Experimental · somente Ubuntu 26.04</small>
           </span>
         </a>
       </div>
@@ -973,7 +972,7 @@ cortex-whisper --microphone "ME6S"</code></pre>
         <details><summary data-i18n="faq.q2">Preciso de GPU?</summary><div class="body"><p data-i18n="faq.a2">Não. A inferência roda na CPU com quantização int8. Se uma GPU com CUDA estiver disponível, o app tenta usá-la automaticamente.</p></div></details>
         <details><summary data-i18n="faq.q3">Funciona offline?</summary><div class="body"><p data-i18n="faq.a3">Sim, depois que o modelo é baixado. A única conexão necessária é o download inicial do modelo Whisper pelo Hugging Face.</p></div></details>
         <details><summary data-i18n="faq.q4">Por que o overlay fica no centro da tela?</summary><div class="body"><p data-i18n="faq.a4">O Wayland impede que aplicativos comuns leiam a posição global do ponteiro. Centralizar o overlay é a abordagem confiável em configurações com múltiplos monitores.</p></div></details>
-        <details><summary data-i18n="faq.q5">A colagem automática não funciona. E agora?</summary><div class="body"><p data-i18n="faq.a5">No Wayland, a colagem depende do serviço de usuário do <code>ydotool</code> estar ativo. Confirme com <code>systemctl --user status ydotool.service</code> e rode <code>cortex-whisper --diagnostics</code>.</p></div></details>
+        <details><summary data-i18n="faq.q5">A colagem automática não funciona. E agora?</summary><div class="body"><p data-i18n="faq.a5">No Wayland, a colagem depende do serviço de usuário do <code>ydotool</code> estar ativo. Confirme com <code>systemctl --user status ydotool.service</code> e rode <code>./venv/bin/python cortex_whisper.py --diagnostics</code>.</p></div></details>
         <details><summary data-i18n="faq.q6">Quando sai a versão para Windows e macOS?</summary><div class="body"><p data-i18n="faq.a6">O build de Windows já existe, mas ainda não foi validado em hardware real. macOS ainda não tem a integração de plataforma implementada. Acompanhe pelo repositório.</p></div></details>
       </div>
     </div>
@@ -1005,9 +1004,7 @@ cortex-whisper --microphone "ME6S"</code></pre>
   var DEB26   = "cortex-whisper_0.2.0-1_ubuntu26.04_amd64.deb";
   var ASSET   = REPO + "/releases/download/" + TAG + "/";
 
-  // Point every download control at the released asset.
-  document.getElementById("dl-flatpak").href = ASSET + FLATPAK;
-  document.getElementById("dl-deb").href = "#download";
+  // Point package controls at experimental release assets.
   document.querySelector('[data-dl="flatpak"]').href = ASSET + FLATPAK;
   document.querySelector('[data-dl="deb24"]').href = ASSET + DEB24;
   document.querySelector('[data-dl="deb26"]').href = ASSET + DEB26;
@@ -1022,8 +1019,8 @@ cortex-whisper --microphone "ME6S"</code></pre>
       "hero.title1":"Hold F8, speak, release.",
       "hero.title2":"The text lands right where you are.",
       "hero.lede":"AI voice dictation that runs entirely on your machine. Cortex Whisper records, transcribes locally with <code>faster-whisper</code>, and pastes the result into the app that already has focus. No audio ever leaves your computer.",
-      "hero.flatpak":"Download Flatpak", "hero.flatpakSub":"Recommended · Linux x86_64",
-      "hero.deb":"Download .deb", "hero.debSub":"Ubuntu 24.04 / 26.04",
+      "hero.install":"Install from source", "hero.installSub":"Recommended method · Linux",
+      "hero.packages":"Experimental packages",
       "hero.source":"Source code",
       "hero.note":"Free and open source under the MIT license. No account, no subscription, no telemetry.",
       "hero.shot1":"Recording", "hero.shot2":"Transcribing", "hero.shot3":"Pasted",
@@ -1060,7 +1057,7 @@ cortex-whisper --microphone "ME6S"</code></pre>
       "priv.r1":"Configuration", "priv.r2":"Logs", "priv.r3":"Models", "priv.r3v":"Hugging Face user cache",
 
       "plat.eyebrow":"Compatibility", "plat.title":"Platform status",
-      "plat.callout":"Version 0.2.0 Beta is validated only on Linux with GNOME/Wayland. Windows support is experimental and has not been tested on real hardware. macOS is not implemented yet.",
+      "plat.callout":"Version 0.2.0 Beta is developed for Linux with GNOME/Wayland. Running from source is currently recommended; Flatpak, .deb, and Windows remain experimental. macOS is not implemented yet.",
       "plat.th1":"Platform", "plat.th2":"Status", "plat.th3":"Notes",
       "plat.p1":"Tested", "plat.n1":"Primary development platform",
       "plat.p2":"Implemented", "plat.n2":"Needs broader testing",
@@ -1068,19 +1065,19 @@ cortex-whisper --microphone "ME6S"</code></pre>
       "plat.p4":"Not supported", "plat.n4":"Platform integration has not been implemented",
 
       "inst.eyebrow":"Install", "inst.title":"Getting it running on Linux",
-      "inst.deps":"1. Install the recommended Flatpak",
-      "inst.depsd":"The bundle isolates Qt, GLib, Python, and the transcription engine from system libraries.",
+      "inst.deps":"1. Download and run the source — recommended",
+      "inst.depsd":"This is currently the most stable way to test Cortex Whisper. Python 3.10 or newer is required.",
       "inst.pkg":"2. Enable automatic paste",
-      "inst.debd":"Alternatively, install the <code>.deb</code> that exactly matches Ubuntu 24.04 or 26.04.",
-      "inst.portal":"On GNOME/Wayland, the system asks for global-shortcut permission on first launch.",
-      "inst.src":"Run from source", "inst.srcd":"Python 3.10 or newer is required.",
+      "inst.debd":"In Settings, keep <strong>Start minimized with the system</strong> enabled and click <strong>Save</strong>. The app will create your user autostart entry.",
+      "inst.portal":"The app starts automatically after you log in. Do not move the repository or its <code>venv</code>, because autostart points to those paths.",
+      "inst.src":"3. Packages under development", "inst.srcd":"Flatpak and <code>.deb</code> still have desktop-portal and audio-integration issues. Use them for testing only.",
       "inst.cli":"Command line",
 
       "dl.eyebrow":"Download", "dl.title":"Cortex Whisper 0.2.0 Beta",
-      "dl.lede":"Linux x86_64 build. Whisper models are not bundled — the selected model is downloaded on first use and reused afterward.",
-      "dl.flatpak":"Cortex-Whisper-0.2.0-x86_64.flatpak", "dl.flatpakSub":"Recommended for Linux x86_64",
-      "dl.deb24":".deb Ubuntu 24.04", "dl.deb24Sub":"Ubuntu 24.04 only",
-      "dl.deb26":".deb Ubuntu 26.04", "dl.deb26Sub":"Ubuntu 26.04 only",
+      "dl.lede":"These packages are previews for development and testing. For normal use, install from source using the instructions above.",
+      "dl.flatpak":"Cortex-Whisper-0.2.0-x86_64.flatpak", "dl.flatpakSub":"Experimental · Linux x86_64",
+      "dl.deb24":".deb Ubuntu 24.04", "dl.deb24Sub":"Experimental · Ubuntu 24.04 only",
+      "dl.deb26":".deb Ubuntu 26.04", "dl.deb26Sub":"Experimental · Ubuntu 26.04 only",
       "dl.note":"Verify the hashes in the <code>SHA256SUMS</code> file published alongside the release. Every version stays available on the <a href=\"https://github.com/matheusz-nied/cortex-whisper/releases\">releases page</a>.",
 
       "faq.eyebrow":"FAQ", "faq.title":"Before you install",
@@ -1093,7 +1090,7 @@ cortex-whisper --microphone "ME6S"</code></pre>
       "faq.q4":"Why is the overlay centered on screen?",
       "faq.a4":"Wayland prevents normal applications from reading global pointer coordinates. Centering the overlay is the reliable approach in multi-monitor layouts.",
       "faq.q5":"Automatic paste isn't working. What now?",
-      "faq.a5":"On Wayland, pasting depends on a working <code>ydotool</code> user service. Check it with <code>systemctl --user status ydotool.service</code> and run <code>cortex-whisper --diagnostics</code>.",
+      "faq.a5":"On Wayland, pasting depends on a working <code>ydotool</code> user service. Check it with <code>systemctl --user status ydotool.service</code> and run <code>./venv/bin/python cortex_whisper.py --diagnostics</code>.",
       "faq.q6":"When are Windows and macOS coming?",
       "faq.a6":"The Windows build already exists but has not been validated on real hardware. macOS platform integration is not implemented yet. Follow the repository for updates.",
 
