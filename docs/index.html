@@ -4,17 +4,104 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cortex Whisper — Ditado por voz local e privado</title>
-<meta name="description" content="Segure F8, fale, solte. Cortex Whisper transcreve sua voz localmente e cola o texto no app em foco. Sem nuvem, sem telemetria.">
+<meta name="description" content="Segure F8, fale, solte. Cortex Whisper transcreve sua voz localmente com faster-whisper e cola o texto no app em foco. 100% local, sem nuvem, sem telemetria. Beta para Linux.">
+<meta name="keywords" content="ditado por voz, whisper, faster-whisper, transcrição local, ditado linux, speech to text, open source, offline, privacidade">
+<meta name="author" content="Matheus Fernandes da Silva">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<meta name="theme-color" content="#040508">
+<link rel="canonical" href="https://matheusz-nied.github.io/cortex-whisper/">
 <link rel="icon" href="assets/cortex-whisper.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
 
 <meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:site_name" content="Cortex Whisper">
+<meta property="og:url" content="https://matheusz-nied.github.io/cortex-whisper/">
 <meta property="og:title" content="Cortex Whisper — Ditado por voz local e privado">
-<meta property="og:description" content="Ditado por voz com IA rodando 100% na sua máquina. Beta para Linux.">
+<meta property="og:description" content="Ditado por voz com IA rodando 100% na sua máquina. Hold F8, fale, solte. Beta para Linux.">
 <meta property="og:image" content="https://matheusz-nied.github.io/cortex-whisper/assets/overlay-recording.png">
+<meta property="og:image:alt" content="Overlay de gravação do Cortex Whisper">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Cortex Whisper — Ditado por voz local e privado">
+<meta name="twitter:description" content="Ditado por voz com IA rodando 100% na sua máquina. Hold F8, fale, solte. Beta para Linux.">
+<meta name="twitter:image" content="https://matheusz-nied.github.io/cortex-whisper/assets/overlay-recording.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Cortex Whisper",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Linux",
+      "softwareVersion": "0.1.0",
+      "url": "https://matheusz-nied.github.io/cortex-whisper/",
+      "downloadUrl": "https://github.com/matheusz-nied/cortex-whisper/releases/latest",
+      "description": "Ditado por voz com IA local baseado em faster-whisper. Segure F8, fale, solte — o texto é colado no app em foco. Sem nuvem e sem telemetria.",
+      "license": "https://opensource.org/licenses/MIT",
+      "isAccessibleForFree": true,
+      "author": {
+        "@type": "Person",
+        "name": "Matheus Fernandes da Silva",
+        "url": "https://github.com/matheusz-nied"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "name": "Cortex Whisper",
+      "url": "https://matheusz-nied.github.io/cortex-whisper/",
+      "description": "Ditado por voz local e privado para Linux",
+      "inLanguage": ["pt-BR", "en"]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Em que idioma ele transcreve?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "A transcrição vem configurada para português (pt), que foi o caso de uso original do projeto. A interface do aplicativo está em inglês."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Preciso de GPU?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Não. A inferência roda na CPU com quantização int8. Se uma GPU com CUDA estiver disponível, o app tenta usá-la automaticamente."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Funciona offline?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sim, depois que o modelo é baixado. A única conexão necessária é o download inicial do modelo Whisper pelo Hugging Face."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "A colagem automática não funciona. E agora?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No Wayland, a colagem depende do serviço de usuário do ydotool estar ativo. Confirme com systemctl --user status ydotool.service e rode cortex-whisper --diagnostics."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
 
 <style>
   :root{
@@ -588,7 +675,7 @@
 <header>
   <div class="wrap nav">
     <a class="brand" href="#top">
-      <img src="assets/cortex-whisper.svg" alt="">
+      <img src="assets/cortex-whisper.svg" alt="Cortex Whisper">
       Cortex Whisper
     </a>
     <nav class="nav-links">
@@ -689,15 +776,15 @@
 
       <div class="shots">
         <figure class="reveal">
-          <img src="assets/overlay-recording.png" alt="" width="248" height="76">
+          <img src="assets/overlay-recording.png" alt="Overlay do Cortex Whisper em modo gravação" width="248" height="76">
           <figcaption data-i18n="hero.shot1">Gravando</figcaption>
         </figure>
         <figure class="reveal">
-          <img src="assets/overlay-decoding.png" alt="" width="248" height="76">
+          <img src="assets/overlay-decoding.png" alt="Overlay do Cortex Whisper transcrevendo áudio" width="248" height="76">
           <figcaption data-i18n="hero.shot2">Transcrevendo</figcaption>
         </figure>
         <figure class="reveal">
-          <img src="assets/overlay-success.png" alt="" width="248" height="76">
+          <img src="assets/overlay-success.png" alt="Overlay do Cortex Whisper após colar o texto" width="248" height="76">
           <figcaption data-i18n="hero.shot3">Colado</figcaption>
         </figure>
       </div>
@@ -1024,9 +1111,15 @@ cortex-whisper --microphone "ME6S"</code></pre>
     var grad = document.getElementById("hero-grad");
     if (grad) grad.setAttribute("data-text", grad.textContent);
     document.documentElement.lang = lang === "en" ? "en" : "pt-BR";
-    document.title = lang === "en"
+    var title = lang === "en"
       ? "Cortex Whisper — Private, local voice dictation"
       : "Cortex Whisper — Ditado por voz local e privado";
+    var desc = lang === "en"
+      ? "Hold F8, speak, release. Cortex Whisper transcribes your voice locally with faster-whisper and pastes into the focused app. Fully local, no cloud, no telemetry. Linux beta."
+      : "Segure F8, fale, solte. Cortex Whisper transcreve sua voz localmente com faster-whisper e cola o texto no app em foco. 100% local, sem nuvem, sem telemetria. Beta para Linux.";
+    document.title = title;
+    var metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute("content", desc);
     buttons.forEach(function (b) {
       b.setAttribute("aria-pressed", String(b.dataset.lang === lang));
     });

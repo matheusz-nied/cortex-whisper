@@ -9,6 +9,7 @@ VERSION="$("$PYTHON_BIN" -c "import runpy; print(runpy.run_path('src/cortex_whis
 "$PYTHON_BIN" scripts/collect_licenses.py
 "$PYTHON_BIN" -m PyInstaller --noconfirm --clean packaging/cortex-whisper.spec
 "$PYTHON_BIN" scripts/prune_qt_components.py dist/cortex-whisper
+"$PYTHON_BIN" scripts/prune_linux_system_libraries.py dist/cortex-whisper
 "$PYTHON_BIN" scripts/collect_native_notices.py \
   --analysis build/cortex-whisper/Analysis-00.toc \
   --bundle dist/cortex-whisper \

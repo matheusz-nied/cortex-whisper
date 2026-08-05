@@ -4,6 +4,7 @@ from pathlib import Path
 
 from scripts.collect_licenses import collect
 from scripts.collect_native_notices import binary_entries
+from scripts.prune_linux_system_libraries import prune as prune_linux_system_libraries
 from scripts.prune_qt_components import prune
 
 
@@ -41,6 +42,28 @@ def test_prune_removes_only_unused_qt_virtual_keyboard(tmp_path):
     assert not virtual_keyboard_library.exists()
     assert not duplicate_library.exists()
     assert qt_widgets.exists()
+
+
+def test_linux_bundle_uses_host_glib_libraries(tmp_path):
+    internal = tmp_path / "bundle" / "_internal"
+    internal.mkdir(parents=True)
+    host_libraries = (
+        "libgio-2.0.so.0",
+        "libglib-2.0.so.0",
+        "libgmodule-2.0.so.0",
+        "libgobject-2.0.so.0",
+        "libgthread-2.0.so.0",
+    )
+    for name in host_libraries:
+        (internal / name).write_text("provided by the host", encoding="utf-8")
+    unrelated = internal / "libportaudio.so.2"
+    unrelated.write_text("bundled", encoding="utf-8")
+
+    removed = prune_linux_system_libraries(tmp_path / "bundle")
+
+    assert {path.name for path in removed} == set(host_libraries)
+    assert all(not (internal / name).exists() for name in host_libraries)
+    assert unrelated.exists()
 
 
 def test_frozen_pyav_stub_supports_import_but_rejects_file_api():
