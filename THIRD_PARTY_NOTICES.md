@@ -16,6 +16,7 @@ inventory inside each release is authoritative for that particular build.
 | Component | Audited version | License | Project |
 | --- | ---: | --- | --- |
 | faster-whisper | 1.2.1 | MIT | https://github.com/SYSTRAN/faster-whisper |
+| jeepney | 0.9.0 | MIT | https://gitlab.com/takluyver/jeepney |
 | NumPy | 2.3.5 / 2.5.1 | BSD-3-Clause and bundled notices | https://numpy.org |
 | platformdirs | 4.11.0 | MIT | https://github.com/tox-dev/platformdirs |
 | pynput | 1.8.2 | LGPL-3.0 | https://github.com/moses-palmer/pynput |

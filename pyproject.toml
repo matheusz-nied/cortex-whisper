@@ -14,6 +14,7 @@ authors = [{ name = "Matheus Fernandes da Silva", email = "matheusz.nied@gmail.c
 maintainers = [{ name = "Matheus Fernandes da Silva", email = "matheusz.nied@gmail.com" }]
 dependencies = [
   "faster-whisper>=1.2.1,<2",
+  "jeepney>=0.9,<1",
   "numpy>=2.2,<3",
   "platformdirs>=4.3,<5",
   "pynput>=1.8,<2",

@@ -1,6 +1,6 @@
-from test_hotkeys import FakePortalConnection
+from test_hotkeys import FakePortalConnection, assert_dbus_variants
 
-from cortex_whisper.portals import BACKGROUND_INTERFACE, BackgroundPortal, unwrap_dbus
+from cortex_whisper.portals import BACKGROUND_INTERFACE, BackgroundPortal, unwrap_variants
 
 
 def test_background_portal_requests_autostart():
@@ -11,10 +11,11 @@ def test_background_portal_requests_autostart():
     portal.request(True, lambda success, error: results.append((success, error)))
 
     call = connection.calls[0]
-    assert call[0:2] == (BACKGROUND_INTERFACE, "RequestBackground")
-    options = unwrap_dbus(call[2][1])
+    assert call[0:3] == (BACKGROUND_INTERFACE, "RequestBackground", "sa{sv}")
+    options = unwrap_variants(call[3][1])
     assert options["autostart"] is True
     assert options["commandline"] == ["cortex-whisper"]
+    assert_dbus_variants(call[3][1])
     connection.responses[0][1](0, {"autostart": True})
     assert results == [(True, "")]
 

@@ -8,16 +8,14 @@ import threading
 from collections.abc import Callable
 from typing import Any, Protocol
 
-from PySide6.QtDBus import QDBusObjectPath, QDBusVariant
-
 from .environment import is_flatpak
 from .metadata import APP_ID
 from .portals import (
     REGISTRY_INTERFACE,
     SESSION_INTERFACE,
     SHORTCUTS_INTERFACE,
+    PortalBusConnection,
     PortalConnection,
-    QtPortalConnection,
     expected_request_path,
     request_token,
 )
@@ -103,11 +101,12 @@ class PortalHotkey:
 
     def start(self) -> None:
         try:
-            self.connection = self.connection or QtPortalConnection()
+            self.connection = self.connection or PortalBusConnection()
             if not is_flatpak():
                 self.connection.call(
                     REGISTRY_INTERFACE,
                     "Register",
+                    "sa{sv}",
                     [APP_ID, {}],
                 )
             self.connection.subscribe_shortcuts(self._activated, self._deactivated)
@@ -116,10 +115,10 @@ class PortalHotkey:
             path = expected_request_path(self.connection, token)
             self.connection.subscribe_response(path, self._session_created)
             options = {
-                "handle_token": QDBusVariant(token),
-                "session_handle_token": QDBusVariant(session_token),
+                "handle_token": ("s", token),
+                "session_handle_token": ("s", session_token),
             }
-            self.connection.call(SHORTCUTS_INTERFACE, "CreateSession", [options])
+            self.connection.call(SHORTCUTS_INTERFACE, "CreateSession", "a{sv}", [options])
             self.started = True
         except Exception as exc:
             self._fail(str(exc))
@@ -128,8 +127,7 @@ class PortalHotkey:
         if response != 0:
             self._fail(f"session creation was denied (code {response})")
             return
-        handle = results.get("session_handle")
-        self.session_handle = handle.path() if isinstance(handle, QDBusObjectPath) else str(handle or "")
+        self.session_handle = str(results.get("session_handle") or "")
         if not self.session_handle:
             self._fail("the portal returned no shortcut session")
             return
@@ -138,16 +136,17 @@ class PortalHotkey:
         path = expected_request_path(self.connection, token)
         self.connection.subscribe_response(path, self._shortcut_bound)
         properties = {
-            "description": QDBusVariant("Hold to dictate"),
-            "preferred_trigger": QDBusVariant(self.key_name),
+            "description": ("s", "Hold to dictate"),
+            "preferred_trigger": ("s", self.key_name),
         }
         shortcuts = [(self.shortcut_id, properties)]
-        options = {"handle_token": QDBusVariant(token)}
+        options = {"handle_token": ("s", token)}
         try:
             self.connection.call(
                 SHORTCUTS_INTERFACE,
                 "BindShortcuts",
-                [QDBusObjectPath(self.session_handle), shortcuts, "", options],
+                "oa(sa{sv})sa{sv}",
+                [self.session_handle, shortcuts, "", options],
             )
         except Exception as exc:
             self._fail(str(exc))
@@ -174,11 +173,13 @@ class PortalHotkey:
     def stop(self) -> None:
         if self.connection and self.session_handle:
             try:
-                self.connection.call(SESSION_INTERFACE, "Close", [], path=self.session_handle)
+                self.connection.call(SESSION_INTERFACE, "Close", "", [], path=self.session_handle)
             except Exception:
                 pass
         if self.connection:
+            # clear() drops the bus connection, so a restart must build a new one.
             self.connection.clear()
+            self.connection = None
         self.session_handle = None
         self.started = False
 

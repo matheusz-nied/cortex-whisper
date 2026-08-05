@@ -1,19 +1,32 @@
-"""QtDBus clients for XDG desktop portals."""
+"""D-Bus clients for XDG desktop portals.
+
+The transport is jeepney rather than QtDBus. ``GlobalShortcuts.BindShortcuts``
+expects ``a(sa{sv})``, and PySide6 cannot marshal D-Bus structs: the element
+type of an array has to be registered with ``qDBusRegisterMetaType``, a C++
+template that the bindings do not expose.
+
+Values inside an ``a{sv}`` are variants, which jeepney writes as a
+``(signature, value)`` tuple -- ``("s", token)``, ``("b", True)``.
+"""
 
 from __future__ import annotations
 
+import queue
+import threading
 import uuid
 from collections.abc import Callable
 from typing import Any, Protocol
 
-from PySide6.QtCore import SLOT, QObject, Slot
-from PySide6.QtDBus import (
-    QDBus,
-    QDBusConnection,
-    QDBusMessage,
-    QDBusObjectPath,
-    QDBusVariant,
+from jeepney import (
+    DBusAddress,
+    HeaderFields,
+    MatchRule,
+    MessageType,
+    new_method_call,
 )
+from jeepney.bus_messages import message_bus
+from jeepney.io.threading import DBusRouter, open_dbus_connection
+from PySide6.QtCore import QObject, Qt, Signal, Slot
 
 BUS_NAME = "org.freedesktop.portal.Desktop"
 OBJECT_PATH = "/org/freedesktop/portal/desktop"
@@ -22,18 +35,15 @@ SESSION_INTERFACE = "org.freedesktop.portal.Session"
 SHORTCUTS_INTERFACE = "org.freedesktop.portal.GlobalShortcuts"
 REGISTRY_INTERFACE = "org.freedesktop.host.portal.Registry"
 BACKGROUND_INTERFACE = "org.freedesktop.portal.Background"
+CALL_TIMEOUT = 5.0
 
 
-def unwrap_dbus(value: Any) -> Any:
-    if isinstance(value, QDBusVariant):
-        return unwrap_dbus(value.variant())
-    if isinstance(value, QDBusObjectPath):
-        return value.path()
-    if isinstance(value, dict):
-        return {str(key): unwrap_dbus(child) for key, child in value.items()}
-    if isinstance(value, (list, tuple)):
-        return [unwrap_dbus(child) for child in value]
-    return value
+def unwrap_variants(values: dict[str, Any]) -> dict[str, Any]:
+    """Drop the ``(signature, value)`` wrapper from the values of an a{sv}."""
+    return {
+        str(key): value[1] if isinstance(value, tuple) and len(value) == 2 else value
+        for key, value in values.items()
+    }
 
 
 class PortalConnection(Protocol):
@@ -44,6 +54,7 @@ class PortalConnection(Protocol):
         self,
         interface: str,
         method: str,
+        signature: str,
         arguments: list[Any],
         path: str = OBJECT_PATH,
     ) -> list[Any]: ...
@@ -59,116 +70,121 @@ class PortalConnection(Protocol):
     def clear(self) -> None: ...
 
 
-class _ResponseReceiver(QObject):
-    def __init__(self, callback: Callable[[int, dict[str, Any]], None]) -> None:
-        super().__init__()
-        self.callback = callback
+class PortalBusConnection(QObject):
+    """A private session-bus connection for portal conversations.
 
-    @Slot("uint", "QVariantMap")
-    def response(self, response: int, results: dict[str, Any]) -> None:
-        self.callback(int(response), unwrap_dbus(results))
+    jeepney reads the socket on its own thread. The queued signal below hands
+    each message over to the Qt thread, so callbacks reach the controller where
+    the rest of the GUI lives.
+    """
 
+    _message_received = Signal(object)
 
-class _ShortcutReceiver(QObject):
-    def __init__(
-        self,
-        activated: Callable[[str, str], None],
-        deactivated: Callable[[str, str], None],
-    ) -> None:
-        super().__init__()
-        self.activated_callback = activated
-        self.deactivated_callback = deactivated
-
-    @Slot("QDBusObjectPath", str, "qulonglong", "QVariantMap")
-    def activated(
-        self,
-        session_handle: QDBusObjectPath,
-        shortcut_id: str,
-        _timestamp: int,
-        _options: dict[str, Any],
-    ) -> None:
-        self.activated_callback(session_handle.path(), shortcut_id)
-
-    @Slot("QDBusObjectPath", str, "qulonglong", "QVariantMap")
-    def deactivated(
-        self,
-        session_handle: QDBusObjectPath,
-        shortcut_id: str,
-        _timestamp: int,
-        _options: dict[str, Any],
-    ) -> None:
-        self.deactivated_callback(session_handle.path(), shortcut_id)
-
-
-class QtPortalConnection:
     def __init__(self) -> None:
-        self.bus = QDBusConnection.sessionBus()
-        if not self.bus.isConnected():
-            raise RuntimeError(self.bus.lastError().message() or "the D-Bus session bus is unavailable")
-        self.receivers: list[QObject] = []
+        super().__init__()
+        try:
+            self.connection = open_dbus_connection(bus="SESSION")
+        except Exception as exc:
+            raise RuntimeError(f"the D-Bus session bus is unavailable: {exc}") from exc
+        self.router = DBusRouter(self.connection)
+        self.messages: queue.Queue[Any] = queue.Queue()
+        self.filters: list[Any] = []
+        self.response_callbacks: dict[str, Callable[[int, dict[str, Any]], None]] = {}
+        self.shortcut_callbacks: tuple[Callable[[str, str], None], Callable[[str, str], None]] | None = None
+        self.closed = False
+        self._message_received.connect(self._deliver, Qt.ConnectionType.QueuedConnection)
+        self.reader = threading.Thread(target=self._forward_messages, name="portal-messages", daemon=True)
+        self.reader.start()
 
     @property
     def sender_name(self) -> str:
-        return self.bus.baseService().lstrip(":").replace(".", "_")
+        return (self.connection.unique_name or "").lstrip(":").replace(".", "_")
 
     def call(
         self,
         interface: str,
         method: str,
+        signature: str,
         arguments: list[Any],
         path: str = OBJECT_PATH,
     ) -> list[Any]:
-        message = QDBusMessage.createMethodCall(BUS_NAME, path, interface, method)
-        message.setArguments(arguments)
-        reply = self.bus.call(message, QDBus.CallMode.Block, 5_000)
-        if reply.type() == QDBusMessage.MessageType.ErrorMessage:
-            detail = reply.errorMessage() or reply.errorName() or f"{interface}.{method} failed"
-            raise RuntimeError(detail)
-        return unwrap_dbus(reply.arguments())
+        address = DBusAddress(path, bus_name=BUS_NAME, interface=interface)
+        message = new_method_call(address, method, signature, tuple(arguments))
+        return self._send(message, f"{interface}.{method}")
 
     def subscribe_response(
         self,
         path: str,
         callback: Callable[[int, dict[str, Any]], None],
     ) -> None:
-        receiver = _ResponseReceiver(callback)
-        connected = self.bus.connect(
-            BUS_NAME,
-            path,
-            REQUEST_INTERFACE,
-            "Response",
-            receiver,
-            SLOT("response(uint,QVariantMap)"),
-        )
-        if not connected:
-            raise RuntimeError(self.bus.lastError().message() or "could not monitor the portal request")
-        self.receivers.append(receiver)
+        self.response_callbacks[path] = callback
+        self._watch(type="signal", interface=REQUEST_INTERFACE, member="Response", path=path)
 
     def subscribe_shortcuts(
         self,
         activated: Callable[[str, str], None],
         deactivated: Callable[[str, str], None],
     ) -> None:
-        receiver = _ShortcutReceiver(activated, deactivated)
-        for signal, slot in (
-            ("Activated", "activated(QDBusObjectPath,QString,qulonglong,QVariantMap)"),
-            ("Deactivated", "deactivated(QDBusObjectPath,QString,qulonglong,QVariantMap)"),
-        ):
-            if not self.bus.connect(
-                BUS_NAME,
-                OBJECT_PATH,
-                SHORTCUTS_INTERFACE,
-                signal,
-                receiver,
-                SLOT(slot),
-            ):
-                raise RuntimeError(self.bus.lastError().message() or f"could not monitor {signal}")
-        self.receivers.append(receiver)
+        self.shortcut_callbacks = (activated, deactivated)
+        for member in ("Activated", "Deactivated"):
+            self._watch(type="signal", interface=SHORTCUTS_INTERFACE, member=member, path=OBJECT_PATH)
 
     def clear(self) -> None:
-        for receiver in self.receivers:
-            receiver.deleteLater()
-        self.receivers.clear()
+        if self.closed:
+            return
+        self.closed = True
+        for handle in self.filters:
+            handle.close()
+        self.filters.clear()
+        self.response_callbacks.clear()
+        self.shortcut_callbacks = None
+        self.messages.put(None)
+        self.router.close()
+        self.connection.close()
+
+    def _send(self, message: Any, description: str) -> list[Any]:
+        try:
+            reply = self.router.send_and_get_reply(message, timeout=CALL_TIMEOUT)
+        except Exception as exc:
+            raise RuntimeError(f"{description}: {exc}") from exc
+        if reply.header.message_type is MessageType.error:
+            detail = reply.body[0] if reply.body else reply.header.fields.get(HeaderFields.error_name)
+            raise RuntimeError(str(detail) if detail else f"{description} failed")
+        return list(reply.body)
+
+    def _watch(self, **rule: Any) -> None:
+        # The bus resolves the well-known sender name while routing, so asking it
+        # for that sender keeps other applications out. The local filter compares
+        # header fields literally and would never match it: signals carry the
+        # unique name of the portal (":1.42"), so its rule leaves sender out.
+        self.filters.append(self.router.filter(MatchRule(**rule), queue=self.messages))
+        self._send(message_bus.AddMatch(MatchRule(sender=BUS_NAME, **rule)), "AddMatch")
+
+    def _forward_messages(self) -> None:
+        while True:
+            message = self.messages.get()
+            if message is None:
+                return
+            self._message_received.emit(message)
+
+    @Slot(object)
+    def _deliver(self, message: Any) -> None:
+        fields = message.header.fields
+        interface = fields.get(HeaderFields.interface)
+        member = fields.get(HeaderFields.member)
+        if interface == REQUEST_INTERFACE and member == "Response":
+            callback = self.response_callbacks.pop(fields.get(HeaderFields.path), None)
+            if callback is not None:
+                response, results = message.body
+                callback(int(response), unwrap_variants(results))
+            return
+        if interface == SHORTCUTS_INTERFACE and self.shortcut_callbacks is not None:
+            activated, deactivated = self.shortcut_callbacks
+            session_handle, shortcut_id = message.body[0], message.body[1]
+            if member == "Activated":
+                activated(str(session_handle), str(shortcut_id))
+            elif member == "Deactivated":
+                deactivated(str(session_handle), str(shortcut_id))
 
 
 def request_token(prefix: str) -> str:
@@ -181,7 +197,7 @@ def expected_request_path(connection: PortalConnection, token: str) -> str:
 
 class BackgroundPortal:
     def __init__(self, connection: PortalConnection | None = None) -> None:
-        self.connection = connection or QtPortalConnection()
+        self.connection = connection or PortalBusConnection()
         self.pending: Callable[[bool, str], None] | None = None
 
     def request(self, enabled: bool, callback: Callable[[bool, str], None]) -> None:
@@ -196,13 +212,13 @@ class BackgroundPortal:
             lambda response, results: self._complete(enabled, response, results),
         )
         options = {
-            "handle_token": QDBusVariant(token),
-            "reason": QDBusVariant("Keep voice dictation ready after login"),
-            "autostart": QDBusVariant(enabled),
-            "commandline": QDBusVariant(["cortex-whisper"]),
+            "handle_token": ("s", token),
+            "reason": ("s", "Keep voice dictation ready after login"),
+            "autostart": ("b", enabled),
+            "commandline": ("as", ["cortex-whisper"]),
         }
         try:
-            self.connection.call(BACKGROUND_INTERFACE, "RequestBackground", ["", options])
+            self.connection.call(BACKGROUND_INTERFACE, "RequestBackground", "sa{sv}", ["", options])
         except Exception as exc:
             self._finish(False, str(exc))
 

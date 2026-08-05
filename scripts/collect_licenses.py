@@ -27,6 +27,7 @@ RUNTIME_DISTRIBUTIONS = (
     "httpx",
     "huggingface-hub",
     "idna",
+    "jeepney",
     "Jinja2",
     "MarkupSafe",
     "numpy",
