@@ -1,4 +1,4 @@
-from pulsar_whisper.state import AppState
+from cortex_whisper.state import AppState
 
 
 def test_public_state_values_are_stable():

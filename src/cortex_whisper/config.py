@@ -92,7 +92,7 @@ def log_directory() -> Path:
     legacy = Path(user_log_dir(LEGACY_COMPACT_NAME, LEGACY_COMPACT_NAME))
     if legacy.is_dir() and legacy != path:
         for source in legacy.iterdir():
-            target = path / source.name.replace("whisper-ditado", "pulsar-whisper")
+            target = path / source.name.replace("whisper-ditado", "cortex-whisper")
             if source.is_file() and not target.exists():
                 try:
                     shutil.copy2(source, target)

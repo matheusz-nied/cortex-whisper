@@ -1,11 +1,11 @@
-# Pulsar Whisper Release Checklist
+# Cortex Whisper Release Checklist
 
 This document tracks the work required for the first public release. Update each
 item from `[ ]` to `[x]` only after it has been implemented and verified.
 
 ## Current release target
 
-- Product name: `Pulsar Whisper`
+- Product name: `Cortex Whisper`
 - Recommended version: `v0.1.0 Beta`
 - Primary platform: Linux x86_64 with GNOME/Wayland
 - Linux/X11 status: implemented, broader testing required
@@ -28,14 +28,14 @@ Decision record:
 
 | Decision | Value |
 | --- | --- |
-| Product name | Pulsar Whisper |
+| Product name | Cortex Whisper |
 | License | MIT |
 | Copyright holder | Matheus Fernandes da Silva |
 | First public version | `v0.1.0 Beta` |
 | GitHub owner | `matheusz-nied` |
 | Public maintainer email | `matheusz.nied@gmail.com` |
-| Final repository URL | `https://github.com/matheusz-nied/pulsar-whisper` (planned) |
-| Final Linux application ID | `io.github.matheusz_nied.PulsarWhisper` |
+| Final repository URL | `https://github.com/matheusz-nied/cortex-whisper` (planned) |
+| Final Linux application ID | `io.github.matheusz_nied.CortexWhisper` |
 
 ## 1. License the project
 
@@ -63,7 +63,7 @@ References:
 
 ## 2. Document third-party licenses
 
-The project license applies to original Pulsar Whisper code. Bundled dependencies
+The project license applies to original Cortex Whisper code. Bundled dependencies
 retain their own licenses.
 
 - [x] Create `THIRD_PARTY_NOTICES.md`.
@@ -73,7 +73,7 @@ retain their own licenses.
 - [x] Collect Debian copyright notices for bundled Linux system libraries.
 - [x] Include the relevant license texts in binary distributions.
 - [x] Add license files to the Debian package under
-      `/usr/share/doc/pulsar-whisper/`.
+      `/usr/share/doc/cortex-whisper/`.
 - [x] Add license files to the AppImage.
 - [x] Add license files to the Windows installer.
 - [x] Review LGPL obligations for PySide6/Qt and `pynput`.
@@ -83,7 +83,7 @@ retain their own licenses.
 Release blocker discovered and resolved during the audit:
 
 - [x] Exclude PyAV, FFmpeg, and bundled native codecs from frozen releases because
-      Pulsar Whisper transcribes NumPy microphone samples and does not use file decoding.
+      Cortex Whisper transcribes NumPy microphone samples and does not use file decoding.
 - [ ] Re-audit PyAV, FFmpeg, native codecs, notices, and corresponding-source
       obligations if audio-file input is ever added to the application.
 - [x] Remove the unused GPL-only Qt Virtual Keyboard components from release bundles.
@@ -112,10 +112,10 @@ validated on the primary Linux environment.
 - [x] Centralize the version in one source file.
 - [x] Remove hard-coded version duplication from Python, Debian, Inno Setup, and build scripts.
 - [x] Generate artifact names from the central version.
-- [x] Confirm the final product name: `Pulsar Whisper`.
+- [x] Confirm the final product name: `Cortex Whisper`.
 - [x] Confirm the final GitHub owner: `matheusz-nied`.
 - [x] Replace the placeholder with the public maintainer email.
-- [x] Set the application ID to `io.github.matheusz_nied.PulsarWhisper`.
+- [x] Set the application ID to `io.github.matheusz_nied.CortexWhisper`.
 - [ ] Confirm the Windows application GUID will remain stable.
 - [ ] Complete GitHub, PyPI, domain, INPI, and international trademark searches.
 - [x] Add a clear statement that the independent project is not affiliated with or endorsed by OpenAI.
@@ -134,7 +134,7 @@ Current local state:
 
 Steps:
 
-- [ ] Create an empty GitHub repository named `pulsar-whisper`.
+- [ ] Create an empty GitHub repository named `cortex-whisper`.
 - [ ] Do not generate another README, license, or `.gitignore` during creation.
 - [ ] Add the remote:
 
@@ -178,12 +178,12 @@ linux wayland python pyside6 privacy
 - [x] Build an AppImage locally.
 - [x] Provide a desktop entry and scalable icon.
 - [x] Declare `ydotool` and `wl-clipboard` package recommendations.
-- [x] Add generated `io.github.matheusz_nied.PulsarWhisper.metainfo.xml` metadata.
+- [x] Add generated `io.github.matheusz_nied.CortexWhisper.metainfo.xml` metadata.
 - [x] Include name, summary, description, version, license, and launchable ID.
 - [ ] Validate AppStream metadata:
 
 ```bash
-appstreamcli validate io.github.matheusz_nied.PulsarWhisper.metainfo.xml
+appstreamcli validate io.github.matheusz_nied.CortexWhisper.metainfo.xml
 ```
 
 - [x] Install license and third-party notice files with every package.
@@ -218,10 +218,10 @@ should not be published as universal Linux release artifacts.
 - [ ] Add packaged executable smoke tests:
 
 ```bash
-pulsar-whisper --version
-pulsar-whisper --help
-pulsar-whisper --diagnostics
-pulsar-whisper --self-test
+cortex-whisper --version
+cortex-whisper --help
+cortex-whisper --diagnostics
+cortex-whisper --self-test
 ```
 
 - [ ] Validate the Debian control metadata in CI.
@@ -305,7 +305,7 @@ caches, settings, virtual environments, or development packages.
 Suggested short description:
 
 ```text
-Pulsar Whisper is a private, local voice dictation app. Hold F8, speak,
+Cortex Whisper is a private, local voice dictation app. Hold F8, speak,
 and release to transcribe and paste anywhere.
 ```
 
@@ -346,7 +346,7 @@ macOS is not part of the first release.
 - [ ] Create an annotated tag:
 
 ```bash
-git tag -a v0.1.0 -m "Pulsar Whisper v0.1.0 Beta"
+git tag -a v0.1.0 -m "Cortex Whisper v0.1.0 Beta"
 git push origin v0.1.0
 ```
 

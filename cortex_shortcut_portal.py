@@ -22,7 +22,7 @@ SHORTCUTS_INTERFACE = "org.freedesktop.portal.GlobalShortcuts"
 REGISTRY_INTERFACE = "org.freedesktop.host.portal.Registry"
 REQUEST_INTERFACE = "org.freedesktop.portal.Request"
 SESSION_INTERFACE = "org.freedesktop.portal.Session"
-SHORTCUT_ID = "pulsar_whisper_hold_to_talk"
+SHORTCUT_ID = "cortex_whisper_hold_to_talk"
 
 
 def emit(message: str) -> None:

@@ -3,7 +3,7 @@ requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pulsar-whisper"
+name = "cortex-whisper"
 dynamic = ["version"]
 description = "Private, local AI voice dictation"
 readme = "README.md"
@@ -22,22 +22,22 @@ dependencies = [
 ]
 
 [project.scripts]
-pulsar-whisper = "pulsar_whisper.__main__:main"
-whisper-ditado = "pulsar_whisper.__main__:main"
+cortex-whisper = "cortex_whisper.__main__:main"
+whisper-ditado = "cortex_whisper.__main__:main"
 
 [project.gui-scripts]
-pulsar-whisper-gui = "pulsar_whisper.__main__:main"
+cortex-whisper-gui = "cortex_whisper.__main__:main"
 
 [project.urls]
-Homepage = "https://github.com/matheusz-nied/pulsar-whisper"
-Repository = "https://github.com/matheusz-nied/pulsar-whisper"
-Issues = "https://github.com/matheusz-nied/pulsar-whisper/issues"
+Homepage = "https://github.com/matheusz-nied/cortex-whisper"
+Repository = "https://github.com/matheusz-nied/cortex-whisper"
+Issues = "https://github.com/matheusz-nied/cortex-whisper/issues"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.dynamic]
-version = { attr = "pulsar_whisper.__version__" }
+version = { attr = "cortex_whisper.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]

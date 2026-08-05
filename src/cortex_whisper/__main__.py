@@ -1,4 +1,4 @@
-"""Pulsar Whisper command-line entry point."""
+"""Cortex Whisper command-line entry point."""
 
 from __future__ import annotations
 

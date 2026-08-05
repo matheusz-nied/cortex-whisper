@@ -1,4 +1,4 @@
-"""Pulsar Whisper: private, local AI voice dictation."""
+"""Cortex Whisper: private, local AI voice dictation."""
 
 from .metadata import APP_VERSION as __version__
 

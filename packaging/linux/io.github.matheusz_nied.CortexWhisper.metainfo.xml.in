@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>io.github.matheusz_nied.PulsarWhisper</id>
+  <id>io.github.matheusz_nied.CortexWhisper</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
-  <name>Pulsar Whisper</name>
+  <name>Cortex Whisper</name>
   <summary>Private, local AI voice dictation</summary>
   <description>
     <p>
-      Pulsar Whisper records speech while you hold F8, transcribes it locally,
+      Cortex Whisper records speech while you hold F8, transcribes it locally,
       and pastes the result into the focused application.
     </p>
     <p>
@@ -15,12 +15,12 @@
       system tray controls, and local processing through faster-whisper.
     </p>
   </description>
-  <launchable type="desktop-id">io.github.matheusz_nied.PulsarWhisper.desktop</launchable>
+  <launchable type="desktop-id">io.github.matheusz_nied.CortexWhisper.desktop</launchable>
   <provides>
-    <binary>pulsar-whisper</binary>
+    <binary>cortex-whisper</binary>
   </provides>
-  <url type="homepage">https://github.com/matheusz-nied/pulsar-whisper</url>
-  <url type="bugtracker">https://github.com/matheusz-nied/pulsar-whisper/issues</url>
+  <url type="homepage">https://github.com/matheusz-nied/cortex-whisper</url>
+  <url type="bugtracker">https://github.com/matheusz-nied/cortex-whisper/issues</url>
   <developer id="io.github.matheusz_nied">
     <name>Matheus Fernandes da Silva</name>
   </developer>

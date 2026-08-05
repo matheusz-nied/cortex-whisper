@@ -1,4 +1,4 @@
-"""Pulsar Whisper settings window."""
+"""Cortex Whisper settings window."""
 
 from __future__ import annotations
 

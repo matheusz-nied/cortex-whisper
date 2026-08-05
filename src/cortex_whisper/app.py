@@ -1,4 +1,4 @@
-"""Pulsar Whisper Qt application."""
+"""Cortex Whisper Qt application."""
 
 from __future__ import annotations
 
@@ -94,7 +94,7 @@ class SingleInstance(QObject):
             socket.disconnectFromServer()
 
 
-class PulsarWhisperApplication(QObject):
+class CortexWhisperApplication(QObject):
     def __init__(self, qt_app: QApplication, log_file: Path) -> None:
         super().__init__()
         self.qt_app = qt_app
@@ -214,13 +214,13 @@ def run_gui() -> int:
         logging.getLogger(__name__).warning(instance.message)
         print(instance.message, file=sys.stderr, flush=True)
         return 0
-    pulsar_app = PulsarWhisperApplication(app, log_file)
-    instance.show_requested.connect(pulsar_app.show_settings)
-    app.aboutToQuit.connect(pulsar_app.controller.shutdown)
+    cortex_app = CortexWhisperApplication(app, log_file)
+    instance.show_requested.connect(cortex_app.show_settings)
+    app.aboutToQuit.connect(cortex_app.controller.shutdown)
 
     def handle_shutdown_signal(signum, _frame) -> None:
         logging.getLogger(__name__).info("Received signal %s; shutting down", signum)
-        pulsar_app.quit()
+        cortex_app.quit()
 
     signal.signal(signal.SIGINT, handle_shutdown_signal)
     if hasattr(signal, "SIGTERM"):
@@ -232,9 +232,9 @@ def run_gui() -> int:
     signal_pump.setInterval(150)
     signal_pump.timeout.connect(lambda: None)
     signal_pump.start()
-    pulsar_app.start()
+    cortex_app.start()
     # Keep these references alive for the duration of the event loop.
     app._single_instance = instance  # type: ignore[attr-defined]
-    app._pulsar_app = pulsar_app  # type: ignore[attr-defined]
+    app._cortex_app = cortex_app  # type: ignore[attr-defined]
     app._signal_pump = signal_pump  # type: ignore[attr-defined]
     return app.exec()

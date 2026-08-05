@@ -14,8 +14,8 @@ a = Analysis(
     pathex=[str(root / "src")],
     binaries=[],
     datas=[
-        (str(root / "pulsar_shortcut_portal.py"), "."),
-        (str(root / "assets" / "pulsar-whisper.svg"), "assets"),
+        (str(root / "cortex_shortcut_portal.py"), "."),
+        (str(root / "assets" / "cortex-whisper.svg"), "assets"),
         (str(root / "build" / "legal"), "legal"),
     ],
     hiddenimports=["faster_whisper", "sounddevice", "pynput", *keyboard_imports],
@@ -41,7 +41,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="pulsar-whisper",
+    name="cortex-whisper",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -56,5 +56,5 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=True,
-    name="pulsar-whisper",
+    name="cortex-whisper",
 )

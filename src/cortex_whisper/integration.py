@@ -24,7 +24,7 @@ def launch_command() -> list[str]:
         return [os.environ["APPIMAGE"]]
     if getattr(sys, "frozen", False):
         return [sys.executable]
-    return [sys.executable, str(Path(__file__).resolve().parents[2] / "pulsar_whisper.py")]
+    return [sys.executable, str(Path(__file__).resolve().parents[2] / "cortex_whisper.py")]
 
 
 def command_string(command: list[str]) -> str:

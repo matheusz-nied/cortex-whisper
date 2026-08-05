@@ -1,8 +1,8 @@
-# Pulsar Whisper
+# Cortex Whisper
 
 Private, local AI voice dictation powered by `faster-whisper`.
 
-Hold **F8**, speak, and release. Pulsar Whisper records your voice, transcribes
+Hold **F8**, speak, and release. Cortex Whisper records your voice, transcribes
 it on your computer, and pastes the result into the application that already has
 focus. A compact cyberpunk-inspired overlay shows when the app is recording,
 transcribing, or finished.
@@ -18,7 +18,7 @@ transcribing, or finished.
 > support is experimental and has not been tested on real hardware. macOS is not
 > implemented yet.
 
-Pulsar Whisper is an independent open-source project. It is not affiliated with,
+Cortex Whisper is an independent open-source project. It is not affiliated with,
 endorsed by, or sponsored by OpenAI.
 
 ## Platform status
@@ -69,12 +69,12 @@ GNOME/Wayland requests permission for the global shortcut on first launch.
 Python 3.10 or newer is required.
 
 ```bash
-git clone https://github.com/matheusz-nied/pulsar-whisper.git
-cd pulsar-whisper
+git clone https://github.com/matheusz-nied/cortex-whisper.git
+cd cortex-whisper
 python3 -m venv venv
 source venv/bin/activate
 python -m pip install -r requirements.txt
-python pulsar_whisper.py
+python cortex_whisper.py
 ```
 
 The former `python ditado.py` entry point remains as a temporary compatibility alias.
@@ -85,21 +85,21 @@ The former `python ditado.py` entry point remains as a temporary compatibility a
 source venv/bin/activate
 python -m pip install -r requirements-dev.txt
 PYTHON_BIN=venv/bin/python scripts/build_linux.sh
-sudo apt install ./dist/pulsar-whisper_0.1.0_amd64.deb
+sudo apt install ./dist/cortex-whisper_0.1.0_amd64.deb
 ```
 
 Launch it from the application menu or run:
 
 ```bash
-pulsar-whisper
+cortex-whisper
 ```
 
 When `appimagetool` is installed, the same script creates
-`dist/Pulsar-Whisper-0.1.0-x86_64.AppImage`.
+`dist/Cortex-Whisper-0.1.0-x86_64.AppImage`.
 
 ## Usage
 
-1. Start Pulsar Whisper and wait for the model to become ready.
+1. Start Cortex Whisper and wait for the model to become ready.
 2. Place the cursor in a text field.
 3. Hold **F8** while speaking.
 4. Release **F8** to transcribe and paste.
@@ -114,12 +114,12 @@ startup, and a live microphone test.
 ## Command line
 
 ```bash
-python pulsar_whisper.py --help
-python pulsar_whisper.py --version
-python pulsar_whisper.py --list-microphones
-python pulsar_whisper.py --diagnostics
-python pulsar_whisper.py --no-gui --model medium
-python pulsar_whisper.py --microphone "ME6S"
+python cortex_whisper.py --help
+python cortex_whisper.py --version
+python cortex_whisper.py --list-microphones
+python cortex_whisper.py --diagnostics
+python cortex_whisper.py --no-gui --model medium
+python cortex_whisper.py --microphone "ME6S"
 ```
 
 Terminal mode uses Enter to start and stop recording and `q` to quit.
@@ -134,12 +134,12 @@ Terminal mode uses Enter to start and stop recording and `q` to quit.
 
 | Data | Linux | Windows |
 | --- | --- | --- |
-| Configuration | `~/.config/PulsarWhisper/config.json` | `%LOCALAPPDATA%\PulsarWhisper\config.json` |
-| Logs | `~/.local/state/PulsarWhisper/log/` | `%LOCALAPPDATA%\PulsarWhisper\Logs\` |
+| Configuration | `~/.config/CortexWhisper/config.json` | `%LOCALAPPDATA%\CortexWhisper\config.json` |
+| Logs | `~/.local/state/CortexWhisper/log/` | `%LOCALAPPDATA%\CortexWhisper\Logs\` |
 | Models | Hugging Face user cache | Hugging Face user cache |
 
 Existing `WhisperDitado` configuration and logs are copied automatically on the
-first Pulsar Whisper launch. The originals are retained as a recovery backup.
+first Cortex Whisper launch. The originals are retained as a recovery backup.
 
 ## Development
 
@@ -147,7 +147,7 @@ first Pulsar Whisper launch. The originals are retained as a recovery backup.
 python -m pip install -r requirements-dev.txt
 python -m ruff check .
 python -m pytest
-python -m compileall -q pulsar_whisper.py pulsar_shortcut_portal.py src
+python -m compileall -q cortex_whisper.py cortex_shortcut_portal.py src
 ```
 
 Build Linux packages with `PYTHON_BIN=venv/bin/python scripts/build_linux.sh`.
@@ -172,7 +172,7 @@ desktop session, microphone, logs, and reproduction steps for integration issues
 
 ## License
 
-Pulsar Whisper is released under the [MIT License](LICENSE).
+Cortex Whisper is released under the [MIT License](LICENSE).
 
 Copyright (c) 2026 Matheus Fernandes da Silva.
 

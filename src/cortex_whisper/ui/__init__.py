@@ -1,0 +1,1 @@
+"""Cortex Whisper visual components."""

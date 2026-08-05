@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from pulsar_whisper.audio import SAMPLE_RATE, resample_audio
+from cortex_whisper.audio import SAMPLE_RATE, resample_audio
 
 
 def test_resample_keeps_float32_and_duration():

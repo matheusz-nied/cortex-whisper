@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=Pulsar Whisper
+Name=Cortex Whisper
 Comment=Private, local AI voice dictation
-Exec=pulsar-whisper
-Icon=pulsar-whisper
+Exec=cortex-whisper
+Icon=cortex-whisper
 Terminal=false
 Categories=Utility;
 Keywords=AI;whisper;dictation;voice;transcription;speech;

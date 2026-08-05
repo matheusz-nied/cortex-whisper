@@ -1,19 +1,19 @@
-#define MyAppName "Pulsar Whisper"
+#define MyAppName "Cortex Whisper"
 #ifndef MyAppVersion
   #define MyAppVersion "0.0.0-dev"
 #endif
 #define MyAppPublisher "Matheus Fernandes da Silva"
-#define MyAppExeName "pulsar-whisper.exe"
+#define MyAppExeName "cortex-whisper.exe"
 
 [Setup]
 AppId={{B7D20D6B-4368-4D44-9127-11904E17E4A6}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-DefaultDirName={autopf}\Pulsar Whisper
-DefaultGroupName=Pulsar Whisper
+DefaultDirName={autopf}\Cortex Whisper
+DefaultGroupName=Cortex Whisper
 OutputDir=..\..\dist
-OutputBaseFilename=Pulsar-Whisper-Setup-{#MyAppVersion}
+OutputBaseFilename=Cortex-Whisper-Setup-{#MyAppVersion}
 Compression=lzma2
 SolidCompression=yes
 ArchitecturesAllowed=x64compatible
@@ -23,7 +23,7 @@ WizardStyle=modern
 LicenseFile=..\..\LICENSE
 
 [Files]
-Source: "..\..\dist\pulsar-whisper\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\dist\cortex-whisper\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\build\legal\BUNDLED_COMPONENTS.md"; DestDir: "{app}"; Flags: ignoreversion
@@ -31,15 +31,15 @@ Source: "..\..\build\legal\NATIVE_COMPONENTS.md"; DestDir: "{app}"; Flags: ignor
 Source: "..\..\build\legal\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\Pulsar Whisper"; Filename: "{app}\{#MyAppExeName}"
-Name: "{userdesktop}\Pulsar Whisper"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{group}\Cortex Whisper"; Filename: "{app}\{#MyAppExeName}"
+Name: "{userdesktop}\Cortex Whisper"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"
-Name: "startup"; Description: "Start Pulsar Whisper with Windows"; GroupDescription: "Startup:"; Flags: checkedonce
+Name: "startup"; Description: "Start Cortex Whisper with Windows"; GroupDescription: "Startup:"; Flags: checkedonce
 
 [Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "PulsarWhisper"; ValueData: """{app}\{#MyAppExeName}"""; Tasks: startup; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "CortexWhisper"; ValueData: """{app}\{#MyAppExeName}"""; Tasks: startup; Flags: uninsdeletevalue
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "Launch Pulsar Whisper"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "Launch Cortex Whisper"; Flags: nowait postinstall skipifsilent

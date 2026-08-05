@@ -75,11 +75,11 @@ class PynputHotkey:
 def portal_helper_path() -> Path:
     candidates = []
     if getattr(sys, "_MEIPASS", None):
-        candidates.append(Path(sys._MEIPASS) / "pulsar_shortcut_portal.py")
+        candidates.append(Path(sys._MEIPASS) / "cortex_shortcut_portal.py")
     candidates.extend(
         [
-            Path(__file__).resolve().parents[2] / "pulsar_shortcut_portal.py",
-            Path.cwd() / "pulsar_shortcut_portal.py",
+            Path(__file__).resolve().parents[2] / "cortex_shortcut_portal.py",
+            Path.cwd() / "cortex_shortcut_portal.py",
         ]
     )
     return next((path for path in candidates if path.exists()), candidates[0])
